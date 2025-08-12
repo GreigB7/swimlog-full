@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+input, select, textarea { @apply border border-slate-300 rounded-md px-3 py-2 w-full; }
+button.btn { @apply rounded-md px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300; }
+.card { @apply bg-white rounded-xl shadow-sm border border-slate-200 p-4; }
+.hstack { @apply flex items-center gap-3; }
+.vstack { @apply flex flex-col gap-3; }
+.label { @apply text-sm text-slate-600; }
+.table { @apply w-full text-sm; }
+.table th, .table td { @apply px-3 py-2 border-b border-slate-100 text-left align-top; }
