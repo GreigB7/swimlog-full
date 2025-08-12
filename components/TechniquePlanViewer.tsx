@@ -22,64 +22,61 @@ export function TechniquePlanViewer({ userId }: { userId: string }) {
         .eq('user_id', userId)
         .maybeSingle();
       if (error) { setMsg(error.message); return; }
-      setPlan(data?.data ?? null);
+      if (!data?.data) { setPlan(null); return; }
+
+      // quick normalize for viewing
+      const d = data.data as any;
+      const toArr = (x:any) => Array.isArray(x) ? x : x ? [x] : [];
+      setPlan({
+        oef1: d.oef1,
+        oef2: d.oef2,
+        vlinderslag: toArr(d.vlinderslag),
+        rugcrawl:    toArr(d.rugcrawl),
+        schoolslag:  toArr(d.schoolslag),
+        borstcrawl:  toArr(d.borstcrawl),
+        starten_keren: d.starten_keren,
+        raceverdeling: Array.isArray(d.raceverdeling) ? d.raceverdeling : [],
+      });
     })();
   }, [userId]);
 
-  if (!plan) {
-    return <div className="card">Nog geen techniekplan beschikbaar.</div>;
-  }
+  if (msg) return <div className="card">{msg}</div>;
+  if (!plan) return <div className="card">Nog geen techniekplan beschikbaar.</div>;
 
   return (
     <div className="vstack gap-6">
       <div className="card">
         <h3 className="font-semibold mb-2">Techniekoefening 1</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Info label="Omschrijving" value={plan.oef1.omschrijving} />
-          <Info label="Doel" value={plan.oef1.doel} />
-          <Info label="Uitvoeren vanaf" value={plan.oef1.vanaf} />
+          <Info label="Omschrijving" value={plan.oef1?.omschrijving} />
+          <Info label="Doel" value={plan.oef1?.doel} />
+          <Info label="Uitvoeren vanaf" value={plan.oef1?.vanaf} />
         </div>
       </div>
 
       <div className="card">
         <h3 className="font-semibold mb-2">Techniekoefening 2</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Info label="Omschrijving" value={plan.oef2.omschrijving} />
-          <Info label="Doel" value={plan.oef2.doel} />
-          <Info label="Uitvoeren vanaf" value={plan.oef2.vanaf} />
+          <Info label="Omschrijving" value={plan.oef2?.omschrijving} />
+          <Info label="Doel" value={plan.oef2?.doel} />
+          <Info label="Uitvoeren vanaf" value={plan.oef2?.vanaf} />
         </div>
       </div>
 
       <div className="card">
         <h3 className="font-semibold mb-2">Belangrijkste techniekaccent per slag</h3>
-        <Section title="Vlinderslag" a={[
-          ['Omschrijving', plan.vlinderslag.omschrijving],
-          ['Focus vanaf',  plan.vlinderslag.vanaf || '']
-        ]} />
-        <Section title="Rugcrawl" a={[
-          ['Omschrijving', plan.rugcrawl.omschrijving],
-          ['Focus vanaf',  plan.rugcrawl.vanaf || '']
-        ]} />
-        <Section title="Schoolslag" a={[]} />
-        <div className="vstack gap-2">
-          {plan.schoolslag.map((it, i) => (
-            <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Info label={`Omschrijving ${i+1}`} value={it.omschrijving} />
-              <Info label={`Focus vanaf ${i+1}`} value={it.vanaf} />
-            </div>
-          ))}
-        </div>
-        <Section title="Borstcrawl" a={[
-          ['Omschrijving', plan.borstcrawl.omschrijving],
-          ['Focus vanaf',  plan.borstcrawl.vanaf || '']
-        ]} />
+
+        <StrokeSection title="Vlinderslag" rows={plan.vlinderslag} />
+        <StrokeSection title="Rugcrawl" rows={plan.rugcrawl} />
+        <StrokeSection title="Schoolslag" rows={plan.schoolslag} />
+        <StrokeSection title="Borstcrawl" rows={plan.borstcrawl} />
       </div>
 
       <div className="card">
         <h3 className="font-semibold mb-2">Accenten bij starten en keren</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Info label="Omschrijving" value={plan.starten_keren.omschrijving} />
-          <Info label="Focus vanaf" value={plan.starten_keren.vanaf} />
+          <Info label="Omschrijving" value={plan.starten_keren?.omschrijving} />
+          <Info label="Focus vanaf" value={plan.starten_keren?.vanaf} />
         </div>
       </div>
 
@@ -92,6 +89,7 @@ export function TechniquePlanViewer({ userId }: { userId: string }) {
               <Info label={`Geconstateerd bij ${i+1}`} value={it.geconstateerd_bij} />
             </div>
           ))}
+          {!plan.raceverdeling.length && <div className="text-sm text-slate-600">—</div>}
         </div>
       </div>
     </div>
@@ -106,15 +104,27 @@ function Info({ label, value }: { label: string; value?: string | null }) {
     </div>
   );
 }
-function Section({ title, a }: { title: string; a: [string, string | undefined][] }) {
+
+function StrokeSection({ title, rows }: { title: string; rows: { omschrijving: string; vanaf?: string }[] }) {
+  if (!rows?.length) return (
+    <div className="mb-4">
+      <div className="font-medium mb-1">{title}</div>
+      <div className="text-sm text-slate-600">—</div>
+    </div>
+  );
+
   return (
     <div className="mb-4">
       <div className="font-medium mb-1">{title}</div>
-      {a.length ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {a.map(([k,v], i) => <Info key={i} label={k} value={v} />)}
-        </div>
-      ) : null}
+      <div className="vstack gap-2">
+        {rows.map((it, i) => (
+          <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Info label={`Omschrijving ${i+1}`} value={it.omschrijving} />
+            <Info label={`Focus vanaf ${i+1}`} value={it.vanaf} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
+
