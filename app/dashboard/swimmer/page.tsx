@@ -7,6 +7,8 @@ import { BodyForm } from "@/components/BodyForm";
 import { WeekControls } from "@/components/WeekControls";
 import { WeeklyTables } from "@/components/WeeklyTables";
 import { EightWeekChart } from "@/components/EightWeekChart";
+import { WeeklyCharts } from "@/components/WeeklyCharts";
+import { AllTimeTrends } from "@/components/AllTimeTrends";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
@@ -28,8 +30,20 @@ export default function SwimmerPage() {
         <h1 className="text-xl font-semibold">Swimmer Dashboard</h1>
         <p className="text-sm text-slate-600">View your data by week or last 8 weeks. You can correct mistakes inline.</p>
       </div>
+
       <WeekControls mode={mode} setMode={setMode} date={date} setDate={setDate} />
-      {mode === 'week' ? <WeeklyTables userId={userId} canEdit={true} date={date} /> : <EightWeekChart userId={userId} />}
+
+      {mode === 'week' ? (
+        <>
+          <WeeklyCharts userId={userId} date={date} />
+          <WeeklyTables userId={userId} canEdit={true} date={date} />
+        </>
+      ) : (
+        <EightWeekChart userId={userId} />
+      )}
+
+      <AllTimeTrends userId={userId} />
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <TrainingForm /><RhrForm /><BodyForm />
       </div>
