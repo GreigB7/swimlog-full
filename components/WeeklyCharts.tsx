@@ -5,8 +5,8 @@ import { PieChart, Pie, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxi
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
-type TrainRow = { training_date: string; session_type: string | null; duration_minutes: number | null; };
-type RhrRow = { entry_date: string; resting_heart_rate: number | null; };
+type TrainRow = { training_date: string; session_type: string | null; effort_color: string | null; duration_minutes: number | null; };
+type RhrRow   = { entry_date: string; resting_heart_rate: number | null; };
 
 function weekBounds(isoDate: string) {
   const d = new Date(isoDate + "T00:00:00");
@@ -15,6 +15,12 @@ function weekBounds(isoDate: string) {
   const end = new Date(start); end.setDate(start.getDate() + 6);
   const toStr = (x: Date) => x.toISOString().slice(0,10);
   return { start: toStr(start), end: toStr(end) };
+}
+function normEffort(v?: string | null) {
+  const s = (v || '').trim().toLowerCase();
+  if (s === 'green') return 'green';
+  if (s === 'red') return 'red';
+  return 'white';
 }
 
 export function WeeklyCharts({ userId, date }: { userId: string, date: string }) {
@@ -26,7 +32,7 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
     (async () => {
       if (!userId) return;
       const t = await supabase.from('training_log')
-        .select('training_date, session_type, duration_minutes')
+        .select('training_date, session_type, effort_color, duration_minutes')
         .eq('user_id', userId).gte('training_date', start).lte('training_date', end)
         .order('training_date', { ascending: true });
       setTrain(t.data ?? []);
@@ -39,7 +45,7 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
     })();
   }, [userId, start, end]);
 
-  // Pie: total minutes by type
+  // Pie: total minutes by type (unchanged)
   const pieData = useMemo(() => {
     const acc: Record<string, number> = {};
     for (const r of train) {
@@ -50,27 +56,23 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
     return Object.entries(acc).map(([name, value]) => ({ name, value }));
   }, [train]);
 
-  // Stacked bar by day (Mon..Sun) for Swim/Land/Other
+  // Stacked bar by day, but now by EFFORT colors (green/white/red)
   const byDay = useMemo(() => {
     const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-    const map: Record<string, { day: string; swim: number; land: number; other: number }> = {};
-    days.forEach(d => map[d] = { day: d, swim:0, land:0, other:0 });
+    const map: Record<string, { day: string; green: number; white: number; red: number }> = {};
+    days.forEach(d => map[d] = { day: d, green:0, white:0, red:0 });
     for (const r of train) {
       if (!r.duration_minutes || !r.training_date) continue;
       const d = new Date(r.training_date + "T00:00:00");
       const idx = (d.getDay() || 7) - 1; // 0..6
-      const bucket = map[days[idx]];
-      if (r.session_type === 'Morning Swim' || r.session_type === 'Afternoon Swim') bucket.swim += r.duration_minutes;
-      else if (r.session_type === 'Land Training') bucket.land += r.duration_minutes;
-      else bucket.other += r.duration_minutes;
+      const e = normEffort(r.effort_color);
+      map[days[idx]][e as 'green'|'white'|'red'] += r.duration_minutes;
     }
     return days.map(d => map[d]);
   }, [train]);
 
-  // Weekly RHR line
-  const rhrData = useMemo(() => {
-    return rhr.map(r => ({ date: r.entry_date, rhr: r.resting_heart_rate || null }));
-  }, [rhr]);
+  // Weekly RHR line (unchanged)
+  const rhrData = useMemo(() => rhr.map(r => ({ date: r.entry_date, rhr: r.resting_heart_rate || null })), [rhr]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -89,14 +91,15 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
       </div>
 
       <div className="card lg:col-span-2">
-        <h3 className="font-semibold mb-2">Training by Day (minutes)</h3>
+        <h3 className="font-semibold mb-2">Training by Day (minutes) — by Effort</h3>
         <div style={{ width:'100%', height:260 }}>
           <ResponsiveContainer>
             <BarChart data={byDay}>
               <XAxis dataKey="day" /><YAxis /><Tooltip /><Legend />
-              <Bar dataKey="swim" stackId="a" />
-              <Bar dataKey="land" stackId="a" />
-              <Bar dataKey="other" stackId="a" />
+              {/* Effort colors */}
+              <Bar dataKey="green" name="Green" fill="#22c55e" stackId="effort" />
+              <Bar dataKey="white" name="White" fill="#e5e7eb" stroke="#9ca3af" stackId="effort" />
+              <Bar dataKey="red"   name="Red"   fill="#ef4444" stackId="effort" />
             </BarChart>
           </ResponsiveContainer>
         </div>
