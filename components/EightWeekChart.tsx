@@ -5,8 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } fro
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
-// include effort_color now
-type TRow = { training_date: string; effort_color: string | null; duration_minutes: number | null; };
+type TRow = { training_date: string; session_type: string | null; duration_minutes: number | null; };
 
 function isoWeekStart(d: Date) {
   const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -20,13 +19,6 @@ function weekLabel(d: Date) {
   const week = Math.ceil((((start.getTime()-onejan.getTime())/86400000)+1)/7);
   return `W${week} '${String(start.getUTCFullYear()).slice(-2)}`;
 }
-function normEffort(v?: string | null) {
-  const s = (v || '').trim().toLowerCase();
-  if (s === 'green') return 'green';
-  if (s === 'red') return 'red';
-  // default bucket
-  return 'white';
-}
 
 export function EightWeekChart({ userId }: { userId: string }) {
   const [rows, setRows] = useState<TRow[]>([]);
@@ -38,7 +30,7 @@ export function EightWeekChart({ userId }: { userId: string }) {
       const sinceStr = since.toISOString().slice(0,10);
       const { data } = await supabase
         .from('training_log')
-        .select('training_date, effort_color, duration_minutes')
+        .select('training_date, session_type, duration_minutes')
         .eq('user_id', userId)
         .gte('training_date', sinceStr)
         .order('training_date', { ascending: true });
@@ -47,23 +39,24 @@ export function EightWeekChart({ userId }: { userId: string }) {
   }, [userId]);
 
   const chartData = useMemo(() => {
-    const map = new Map<string, { week: string; green: number; white: number; red: number; total: number }>();
+    const map = new Map<string, { week: string; swim: number; land: number; other: number }>();
     for (const r of rows) {
       if (!r.training_date || !r.duration_minutes) continue;
       const d = new Date(r.training_date + "T00:00:00");
       const label = weekLabel(d);
-      if (!map.has(label)) map.set(label, { week: label, green:0, white:0, red:0, total:0 });
+      if (!map.has(label)) map.set(label, { week: label, swim:0, land:0, other:0 });
       const obj = map.get(label)!;
-      const e = normEffort(r.effort_color);
-      obj[e as 'green'|'white'|'red'] += r.duration_minutes;
-      obj.total += r.duration_minutes;
+      const t = (r.session_type || '').toLowerCase();
+      if (t === 'morning swim' || t === 'afternoon swim') obj.swim += r.duration_minutes;
+      else if (t === 'land training') obj.land += r.duration_minutes;
+      else obj.other += r.duration_minutes;
     }
     return Array.from(map.values());
   }, [rows]);
 
   return (
     <div className="card">
-      <h2 className="text-lg font-semibold mb-2">Weekly Totals by Effort (last 8 weeks)</h2>
+      <h2 className="text-lg font-semibold mb-2">Weekly Totals (last 8 weeks)</h2>
       {!chartData.length ? (
         <div className="text-sm text-slate-600">No data yet.</div>
       ) : (
@@ -74,10 +67,10 @@ export function EightWeekChart({ userId }: { userId: string }) {
               <YAxis />
               <Tooltip />
               <Legend />
-              {/* Effort colors */}
-              <Bar dataKey="green" stackId="effort" name="Green" fill="#22c55e" />
-              <Bar dataKey="white" stackId="effort" name="White" fill="#e5e7eb" stroke="#9ca3af" />
-              <Bar dataKey="red"   stackId="effort" name="Red"   fill="#ef4444" />
+              {/* Three separate bars per week */}
+              <Bar dataKey="swim" name="Swim (min)" />
+              <Bar dataKey="land" name="Land (min)" />
+              <Bar dataKey="other" name="Other (min)" />
             </BarChart>
           </ResponsiveContainer>
         </div>
