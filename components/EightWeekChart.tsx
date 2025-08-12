@@ -67,7 +67,7 @@ export function EightWeekChart({ userId }: { userId: string }) {
               <YAxis />
               <Tooltip />
               <Legend />
-              {/* Three separate bars per week */}
+              {/* 3 separate bars per week */}
               <Bar dataKey="swim" name="Swim (min)" />
               <Bar dataKey="land" name="Land (min)" />
               <Bar dataKey="other" name="Other (min)" />
@@ -78,3 +78,4 @@ export function EightWeekChart({ userId }: { userId: string }) {
     </div>
   );
 }
+
