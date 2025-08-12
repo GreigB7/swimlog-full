@@ -38,7 +38,15 @@ export default function CoachPlanPage() {
       if (data && data.length) setSelected(data[0].id);
     })();
   }, []);
-
+{selected ? (
+  <a
+    href={`/dashboard/coach/plan/print?userId=${encodeURIComponent(selected)}`}
+    target="_blank" rel="noopener"
+    className="btn mt-3 inline-block"
+  >
+    Print / PDF
+  </a>
+) : null}
   if (!isCoach) {
     return (
       <div className="card">
