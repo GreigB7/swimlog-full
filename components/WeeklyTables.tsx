@@ -15,7 +15,7 @@ const COMPLEXITIES = [1,2,3] as const;
 
 function weekBounds(isoDate: string) {
   const d = new Date(isoDate + "T00:00:00");
-  const day = d.getDay() || 7; // Monday = 1
+  const day = d.getDay() || 7;
   const start = new Date(d); start.setDate(d.getDate() - (day - 1));
   const end = new Date(start); end.setDate(start.getDate() + 6);
   const toStr = (x: Date) => x.toISOString().slice(0,10);
@@ -65,10 +65,10 @@ export function WeeklyTables({ userId, canEdit, date } : { userId: string, canEd
     <div className="vstack gap-6">
       <div className="card">
         <h2 className="text-lg font-semibold mb-2">Training ({start} → {end})</h2>
-        {!train.length ? <div className="text-sm text-slate-600">No entries this week.</div> : (
+        {!train.length ? <div className="text-sm text-slate-600">Geen gegevens deze week.</div> : (
           <table className="table">
             <thead>
-              <tr><th>Date</th><th>Type</th><th>min</th><th>HR</th><th>Effort</th><th>Cx</th><th>Details</th><th></th></tr>
+              <tr><th>Datum</th><th>Type</th><th>Min</th><th>Hartslag</th><th>Inspanning</th><th>Cx</th><th>Details</th><th></th></tr>
             </thead>
             <tbody>
               {train.map(r=> {
@@ -100,13 +100,13 @@ export function WeeklyTables({ userId, canEdit, date } : { userId: string, canEd
                     {canEdit ? (
                       isEdit ? (
                         <div className="hstack">
-                          <button className="btn" onClick={save}>Save</button>
-                          <button className="btn bg-slate-600 hover:bg-slate-700" onClick={()=>{setEdit(null); setVals({});}}>Cancel</button>
+                          <button className="btn" onClick={save}>Opslaan</button>
+                          <button className="btn bg-slate-600 hover:bg-slate-700" onClick={()=>{setEdit(null); setVals({});}}>Annuleren</button>
                         </div>
                       ) : (
-                        <button className="btn" onClick={()=>{setEdit({kind:'train', id:r.id}); setVals({});}}>Edit</button>
+                        <button className="btn" onClick={()=>{setEdit({kind:'train', id:r.id}); setVals({});}}>Bewerken</button>
                       )
-                    ) : <span className="badge">read-only</span>}
+                    ) : <span className="badge">alleen-lezen</span>}
                   </td>
                 </tr>
               )})}
@@ -116,10 +116,10 @@ export function WeeklyTables({ userId, canEdit, date } : { userId: string, canEd
       </div>
 
       <div className="card">
-        <h2 className="text-lg font-semibold mb-2">Resting HR ({start} → {end})</h2>
-        {!rhr.length ? <div className="text-sm text-slate-600">No entries this week.</div> : (
+        <h2 className="text-lg font-semibold mb-2">Rusthartslag ({start} → {end})</h2>
+        {!rhr.length ? <div className="text-sm text-slate-600">Geen gegevens deze week.</div> : (
           <table className="table">
-            <thead><tr><th>Date</th><th>RHR</th><th></th></tr></thead>
+            <thead><tr><th>Datum</th><th>RHR</th><th></th></tr></thead>
             <tbody>
               {rhr.map(r=> {
                 const isEdit = edit?.kind==='rhr' && edit.id===r.id;
@@ -131,13 +131,13 @@ export function WeeklyTables({ userId, canEdit, date } : { userId: string, canEd
                     {canEdit ? (
                       isEdit ? (
                         <div className="hstack">
-                          <button className="btn" onClick={save}>Save</button>
-                          <button className="btn bg-slate-600 hover:bg-slate-700" onClick={()=>{setEdit(null); setVals({});}}>Cancel</button>
+                          <button className="btn" onClick={save}>Opslaan</button>
+                          <button className="btn bg-slate-600 hover:bg-slate-700" onClick={()=>{setEdit(null); setVals({});}}>Annuleren</button>
                         </div>
                       ) : (
-                        <button className="btn" onClick={()=>{setEdit({kind:'rhr', id:r.id}); setVals({});}}>Edit</button>
+                        <button className="btn" onClick={()=>setEdit({kind:'rhr', id:r.id})}>Bewerken</button>
                       )
-                    ) : <span className="badge">read-only</span>}
+                    ) : <span className="badge">alleen-lezen</span>}
                   </td>
                 </tr>
               )})}
@@ -147,10 +147,10 @@ export function WeeklyTables({ userId, canEdit, date } : { userId: string, canEd
       </div>
 
       <div className="card">
-        <h2 className="text-lg font-semibold mb-2">Body Metrics ({start} → {end})</h2>
-        {!body.length ? <div className="text-sm text-slate-600">No entries this week.</div> : (
+        <h2 className="text-lg font-semibold mb-2">Lichaamsmaten ({start} → {end})</h2>
+        {!body.length ? <div className="text-sm text-slate-600">Geen gegevens deze week.</div> : (
           <table className="table">
-            <thead><tr><th>Date</th><th>Height (cm)</th><th>Weight (kg)</th><th></th></tr></thead>
+            <thead><tr><th>Datum</th><th>Lengte (cm)</th><th>Gewicht (kg)</th><th></th></tr></thead>
             <tbody>
               {body.map(r=> {
                 const isEdit = edit?.kind==='body' && edit.id===r.id;
@@ -163,13 +163,13 @@ export function WeeklyTables({ userId, canEdit, date } : { userId: string, canEd
                     {canEdit ? (
                       isEdit ? (
                         <div className="hstack">
-                          <button className="btn" onClick={save}>Save</button>
-                          <button className="btn bg-slate-600 hover:bg-slate-700" onClick={()=>{setEdit(null); setVals({});}}>Cancel</button>
+                          <button className="btn" onClick={save}>Opslaan</button>
+                          <button className="btn bg-slate-600 hover:bg-slate-700" onClick={()=>{setEdit(null); setVals({});}}>Annuleren</button>
                         </div>
                       ) : (
-                        <button className="btn" onClick={()=>{setEdit({kind:'body', id:r.id}); setVals({});}}>Edit</button>
+                        <button className="btn" onClick={()=>{setEdit({kind:'body', id:r.id}); setVals({});}}>Bewerken</button>
                       )
-                    ) : <span className="badge">read-only</span>}
+                    ) : <span className="badge">alleen-lezen</span>}
                   </td>
                 </tr>
               )})}
