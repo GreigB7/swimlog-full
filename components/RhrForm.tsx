@@ -31,14 +31,15 @@ export function RhrForm() {
   return (
     <div className="card vstack">
       <h2 className="text-lg font-semibold">Rusthartslag toevoegen</h2>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="min-w-0">
           <div className="label">Datum</div>
-          <input type="date" value={date} onChange={e=>setDate(e.target.value)} />
+          <input className="w-full min-w-0" type="date" value={date} onChange={e=>setDate(e.target.value)} />
         </div>
-        <div>
+        <div className="min-w-0">
           <div className="label">RHR (bpm)</div>
           <input
+            className="w-full min-w-0"
             type="number"
             min={30}
             max={150}
