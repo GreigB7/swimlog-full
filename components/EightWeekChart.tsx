@@ -10,7 +10,12 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-type Row = { training_date: string; session_type: string | null; duration_minutes: number | null; };
+type Row = {
+  training_date: string;
+  session_type: string | null;
+  duration_minutes: number | null;
+  effort_color: string | null; // <-- we use this now
+};
 
 function isoWeekStart(d: Date) {
   const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -34,16 +39,17 @@ export function EightWeekChart({ userId }: { userId: string }) {
       if (!userId) return;
       const since = new Date(); since.setDate(since.getDate() - 56);
       const sinceStr = since.toISOString().slice(0, 10);
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('training_log')
-        .select('training_date, session_type, duration_minutes')
+        .select('training_date, session_type, duration_minutes, effort_color') // <-- includes effort_color
         .eq('user_id', userId)
         .gte('training_date', sinceStr)
         .order('training_date', { ascending: true });
-      setRows(data ?? []);
+      if (!error) setRows((data ?? []) as Row[]);
     })();
   }, [userId]);
 
+  // Mode 1: stack by Effort (Green / White / Red)
   const byEffort = useMemo(() => {
     const map = new Map<string, { week: string; green: number; white: number; red: number; total: number }>();
     for (const r of rows) {
@@ -53,23 +59,17 @@ export function EightWeekChart({ userId }: { userId: string }) {
       if (!map.has(label)) map.set(label, { week: label, green: 0, white: 0, red: 0, total: 0 });
       const bucket = map.get(label)!;
 
-      const t = (r.session_type || '').toLowerCase();
-      // Map session types to "effort color" buckets as you recorded them
-      // If you actually store an effort_color column, switch to that instead.
-      // For now, we’ll treat swim/land/other as neutral and just stack by effort;
-      // update this mapping if you want different logic.
-      // (You can also compute effort from your saved field here.)
-      // Default to white if unknown.
-      const effort = 'white'; // <- replace with your real effort if you store it per session
-      if (effort === 'green') bucket.green += r.duration_minutes;
-      else if (effort === 'red') bucket.red += r.duration_minutes;
-      else bucket.white += r.duration_minutes;
+      const e = (r.effort_color || 'white').toLowerCase();
+      if (e === 'green') bucket.green += r.duration_minutes;
+      else if (e === 'red') bucket.red += r.duration_minutes;
+      else bucket.white += r.duration_minutes; // default bucket
 
       bucket.total += r.duration_minutes;
     }
     return Array.from(map.values());
   }, [rows]);
 
+  // Mode 2: grouped by Type (Swim / Land / Other)
   const byType = useMemo(() => {
     const map = new Map<string, { week: string; swim: number; land: number; other: number; total: number }>();
     for (const r of rows) {
@@ -106,7 +106,6 @@ export function EightWeekChart({ userId }: { userId: string }) {
         </div>
       </div>
 
-      {/* Effort mode: one stacked bar per week with explicit colors */}
       {mode === 'effort' ? (
         !byEffort.length ? (
           <div className="text-sm text-slate-600">No data yet.</div>
@@ -132,7 +131,6 @@ export function EightWeekChart({ userId }: { userId: string }) {
           </div>
         )
       ) : (
-        // Type mode: three grouped bars per week
         !byType.length ? (
           <div className="text-sm text-slate-600">No data yet.</div>
         ) : (
@@ -154,5 +152,4 @@ export function EightWeekChart({ userId }: { userId: string }) {
     </div>
   );
 }
-
 
