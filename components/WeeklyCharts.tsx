@@ -1,7 +1,9 @@
 'use client'
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { PieChart, Pie, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Legend, LineChart, Line } from "recharts";
+import {
+  PieChart, Pie, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Legend, LineChart, Line, Cell
+} from "recharts";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
@@ -22,6 +24,12 @@ function normEffort(v?: string | null) {
   if (s === 'red') return 'red';
   return 'white';
 }
+
+const COLORS = {
+  swim: '#3b82f6', // blue
+  land: '#f59e0b', // orange
+  other: '#94a3b8' // slate
+};
 
 export function WeeklyCharts({ userId, date }: { userId: string, date: string }) {
   const { start, end } = useMemo(() => weekBounds(date), [date]);
@@ -45,16 +53,7 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
     })();
   }, [userId, start, end]);
 
-  const pieData = useMemo(() => {
-    const acc: Record<string, number> = {};
-    for (const r of train) {
-      if (!r.duration_minutes) continue;
-      const key = r.session_type || 'Other';
-      acc[key] = (acc[key] || 0) + r.duration_minutes;
-    }
-    return Object.entries(acc).map(([name, value]) => ({ name, value }));
-  }, [train]);
-
+  // Totals by type (used for both the cards and the pie)
   const totals = useMemo(() => {
     let swim = 0, land = 0, other = 0;
     for (const r of train) {
@@ -67,6 +66,14 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
     return { swim, land, other, total: swim + land + other };
   }, [train]);
 
+  // Pie data with explicit colors and labels
+  const pieData = useMemo(() => ([
+    { key: 'swim' as const, name: 'Zwemmen',     value: totals.swim },
+    { key: 'land' as const, name: 'Landtraining',value: totals.land },
+    { key: 'other' as const, name: 'Overig',     value: totals.other },
+  ]), [totals]);
+
+  // Stacked by effort per day (unchanged)
   const byDay = useMemo(() => {
     const days = ['Ma','Di','Wo','Do','Vr','Za','Zo'];
     const map: Record<string, { day: string; green: number; white: number; red: number }> = {};
@@ -85,18 +92,32 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* PIE: type distribution with colors & legend */}
       <div className="card">
         <h3 className="font-semibold mb-2">Verdeling trainingstypes (week)</h3>
-        {pieData.length ? (
+        {(pieData[0].value + pieData[1].value + pieData[2].value) > 0 ? (
           <>
             <div style={{ width:'100%', height:260 }}>
               <ResponsiveContainer>
                 <PieChart>
-                  <Pie dataKey="value" nameKey="name" data={pieData} outerRadius={100} />
-                  <Tooltip />
+                  <Pie dataKey="value" nameKey="name" data={pieData} outerRadius={100}>
+                    {pieData.map((entry) => (
+                      <Cell key={entry.key} fill={COLORS[entry.key]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v: any) => [`${v} min`, 'Minuten']} />
+                  <Legend
+                    payload={[
+                      { value: 'Zwemmen',      type: 'square', color: COLORS.swim,  id: 'legend-swim' },
+                      { value: 'Landtraining', type: 'square', color: COLORS.land,  id: 'legend-land' },
+                      { value: 'Overig',       type: 'square', color: COLORS.other, id: 'legend-other' },
+                    ]}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
+
+            {/* Totals cards */}
             <div className="grid grid-cols-2 gap-2 mt-3">
               <div className="p-2 rounded-md bg-slate-50 border">
                 <div className="text-xs text-slate-500">Zwemmen (ochtend+middag)</div>
@@ -116,15 +137,20 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
               </div>
             </div>
           </>
-        ) : <div className="text-sm text-slate-600">Geen training deze week.</div>}
+        ) : (
+          <div className="text-sm text-slate-600">Geen training deze week.</div>
+        )}
       </div>
 
+      {/* BAR: minutes per day by effort (kept) */}
       <div className="card lg:col-span-2">
         <h3 className="font-semibold mb-2">Training per dag (minuten) — op inspanning</h3>
         <div style={{ width:'100%', height:260 }}>
           <ResponsiveContainer>
             <BarChart data={byDay}>
-              <XAxis dataKey="day" /><YAxis /><Tooltip /><Legend />
+              <XAxis dataKey="day" /><YAxis />
+              <Tooltip formatter={(v: any) => [`${v} min`, 'Minuten']} />
+              <Legend />
               <Bar dataKey="green" name="Groen" fill="#22c55e" stackId="effort" />
               <Bar dataKey="white" name="Wit"   fill="#e5e7eb" stroke="#9ca3af" stackId="effort" />
               <Bar dataKey="red"   name="Rood"  fill="#ef4444" stackId="effort" />
@@ -133,6 +159,7 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
         </div>
       </div>
 
+      {/* LINE: weekly RHR (kept) */}
       <div className="card lg:col-span-3">
         <h3 className="font-semibold mb-2">Rusthartslag (week)</h3>
         {rhrData.length ? (
@@ -149,3 +176,4 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
     </div>
   );
 }
+
