@@ -28,9 +28,7 @@ export default function HomePage() {
     else setStatus('Check your email for the sign-in link.');
   }
 
-  async function signOut() {
-    await supabase.auth.signOut();
-  }
+  async function signOut() { await supabase.auth.signOut(); }
 
   return (
     <div className="vstack gap-6">
@@ -52,15 +50,6 @@ export default function HomePage() {
             </div>
           </div>
         )}
-      </div>
-
-      <div className="card">
-        <h2 className="text-lg font-semibold mb-2">What’s inside</h2>
-        <ul className="list-disc ml-6 text-sm text-slate-700 space-y-1">
-          <li>Add Training / Resting HR / Body Metrics</li>
-          <li>See recent entries & weekly totals</li>
-          <li>Coach view: pick a swimmer and view their data</li>
-        </ul>
       </div>
     </div>
   );

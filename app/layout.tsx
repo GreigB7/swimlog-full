@@ -1,10 +1,7 @@
 import "./globals.css";
 import Link from "next/link";
 
-export const metadata = {
-  title: "Swim Log",
-  description: "Swim team logging app (Supabase + Next.js)"
-};
+export const metadata = { title: "Swim Log", description: "Supabase + Next.js" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

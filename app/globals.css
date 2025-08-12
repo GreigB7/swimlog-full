@@ -11,3 +11,4 @@ button.btn { @apply rounded-md px-4 py-2 bg-blue-600 text-white hover:bg-blue-70
 .label { @apply text-sm text-slate-600; }
 .table { @apply w-full text-sm; }
 .table th, .table td { @apply px-3 py-2 border-b border-slate-100 text-left align-top; }
+.badge { @apply inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-xs; }

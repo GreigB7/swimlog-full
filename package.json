@@ -1,6 +1,6 @@
 {
   "name": "swimlog-full",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -15,7 +15,8 @@
     "@supabase/supabase-js": "2.45.4",
     "@supabase/ssr": "0.4.0",
     "recharts": "2.12.7",
-    "zod": "3.23.8"
+    "zod": "3.23.8",
+    "clsx": "2.1.1"
   },
   "devDependencies": {
     "typescript": "5.4.5",

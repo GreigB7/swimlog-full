@@ -15,11 +15,11 @@ export function BodyForm() {
     if (!user) { setMsg('Not signed in'); return; }
     if (!date || (!h && !w)) { setMsg('Fill date and at least one measurement'); return; }
     const { error } = await supabase.from('body_metrics_log').insert({
-  user_id: user.id,
-  entry_date: date,
-  height_cm: h || null,   // ← make sure it's "|| null"
-  weight_kg: w || null    // ← make sure it's "|| null"
-});
+      user_id: user.id,
+      entry_date: date,
+      height_cm: h || null,
+      weight_kg: w || null
+    });
     if (error) setMsg(error.message);
     else { setMsg('Saved'); }
   }
