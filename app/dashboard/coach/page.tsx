@@ -54,6 +54,7 @@ export default function CoachPage() {
 
       <AllTimeTrends userId={userId} />
     </div>
+   
   );
 }
 
