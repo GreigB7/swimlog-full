@@ -45,7 +45,7 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
     })();
   }, [userId, start, end]);
 
-  // Pie: total minutes by raw session_type (Morning Swim / Afternoon Swim / Land Training / Other)
+  // Pie by raw session type
   const pieData = useMemo(() => {
     const acc: Record<string, number> = {};
     for (const r of train) {
@@ -56,7 +56,7 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
     return Object.entries(acc).map(([name, value]) => ({ name, value }));
   }, [train]);
 
-  // NEW: easy-to-read totals (combine Morning+Afternoon → Swim)
+  // Totals (Swim = Morning+Afternoon)
   const totals = useMemo(() => {
     let swim = 0, land = 0, other = 0;
     for (const r of train) {
@@ -69,7 +69,7 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
     return { swim, land, other, total: swim + land + other };
   }, [train]);
 
-  // Stacked bar by day, grouped by Effort
+  // By day, grouped by effort
   const byDay = useMemo(() => {
     const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
     const map: Record<string, { day: string; green: number; white: number; red: number }> = {};
@@ -77,14 +77,13 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
     for (const r of train) {
       if (!r.duration_minutes || !r.training_date) continue;
       const d = new Date(r.training_date + "T00:00:00");
-      const idx = (d.getDay() || 7) - 1; // 0..6
+      const idx = (d.getDay() || 7) - 1;
       const e = normEffort(r.effort_color);
       map[days[idx]][e as 'green'|'white'|'red'] += r.duration_minutes;
     }
     return days.map(d => map[d]);
   }, [train]);
 
-  // Weekly RHR line
   const rhrData = useMemo(() => rhr.map(r => ({ date: r.entry_date, rhr: r.resting_heart_rate || null })), [rhr]);
 
   return (
@@ -101,8 +100,7 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
                 </PieChart>
               </ResponsiveContainer>
             </div>
-
-            {/* NEW: Totals below the pie */}
+            {/* Totals under the pie */}
             <div className="grid grid-cols-2 gap-2 mt-3">
               <div className="p-2 rounded-md bg-slate-50 border">
                 <div className="text-xs text-slate-500">Swim (Morning+Afternoon)</div>
