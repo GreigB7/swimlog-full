@@ -10,7 +10,7 @@ type RhrRow   = { entry_date: string; resting_heart_rate: number | null; };
 
 function weekBounds(isoDate: string) {
   const d = new Date(isoDate + "T00:00:00");
-  const day = d.getDay() || 7; // Monday = 1
+  const day = d.getDay() || 7;
   const start = new Date(d); start.setDate(d.getDate() - (day - 1));
   const end = new Date(start); end.setDate(start.getDate() + 6);
   const toStr = (x: Date) => x.toISOString().slice(0,10);
@@ -45,7 +45,6 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
     })();
   }, [userId, start, end]);
 
-  // Pie by raw session type
   const pieData = useMemo(() => {
     const acc: Record<string, number> = {};
     for (const r of train) {
@@ -56,7 +55,6 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
     return Object.entries(acc).map(([name, value]) => ({ name, value }));
   }, [train]);
 
-  // Totals (Swim = Morning+Afternoon)
   const totals = useMemo(() => {
     let swim = 0, land = 0, other = 0;
     for (const r of train) {
@@ -69,9 +67,8 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
     return { swim, land, other, total: swim + land + other };
   }, [train]);
 
-  // By day, grouped by effort
   const byDay = useMemo(() => {
-    const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const days = ['Ma','Di','Wo','Do','Vr','Za','Zo'];
     const map: Record<string, { day: string; green: number; white: number; red: number }> = {};
     days.forEach(d => map[d] = { day: d, green:0, white:0, red:0 });
     for (const r of train) {
@@ -89,7 +86,7 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="card">
-        <h3 className="font-semibold mb-2">Training Type Distribution (week)</h3>
+        <h3 className="font-semibold mb-2">Verdeling trainingstypes (week)</h3>
         {pieData.length ? (
           <>
             <div style={{ width:'100%', height:260 }}>
@@ -100,45 +97,44 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            {/* Totals under the pie */}
             <div className="grid grid-cols-2 gap-2 mt-3">
               <div className="p-2 rounded-md bg-slate-50 border">
-                <div className="text-xs text-slate-500">Swim (Morning+Afternoon)</div>
+                <div className="text-xs text-slate-500">Zwemmen (ochtend+middag)</div>
                 <div className="font-semibold">{totals.swim} min</div>
               </div>
               <div className="p-2 rounded-md bg-slate-50 border">
-                <div className="text-xs text-slate-500">Land Training</div>
+                <div className="text-xs text-slate-500">Landtraining</div>
                 <div className="font-semibold">{totals.land} min</div>
               </div>
               <div className="p-2 rounded-md bg-slate-50 border">
-                <div className="text-xs text-slate-500">Other</div>
+                <div className="text-xs text-slate-500">Overig</div>
                 <div className="font-semibold">{totals.other} min</div>
               </div>
               <div className="p-2 rounded-md bg-slate-50 border">
-                <div className="text-xs text-slate-500">Total</div>
+                <div className="text-xs text-slate-500">Totaal</div>
                 <div className="font-semibold">{totals.total} min</div>
               </div>
             </div>
           </>
-        ) : <div className="text-sm text-slate-600">No training this week.</div>}
+        ) : <div className="text-sm text-slate-600">Geen training deze week.</div>}
       </div>
 
       <div className="card lg:col-span-2">
-        <h3 className="font-semibold mb-2">Training by Day (minutes) — by Effort</h3>
+        <h3 className="font-semibold mb-2">Training per dag (minuten) — op inspanning</h3>
         <div style={{ width:'100%', height:260 }}>
           <ResponsiveContainer>
             <BarChart data={byDay}>
               <XAxis dataKey="day" /><YAxis /><Tooltip /><Legend />
-              <Bar dataKey="green" name="Green" fill="#22c55e" stackId="effort" />
-              <Bar dataKey="white" name="White" fill="#e5e7eb" stroke="#9ca3af" stackId="effort" />
-              <Bar dataKey="red"   name="Red"   fill="#ef4444" stackId="effort" />
+              <Bar dataKey="green" name="Groen" fill="#22c55e" stackId="effort" />
+              <Bar dataKey="white" name="Wit"   fill="#e5e7eb" stroke="#9ca3af" stackId="effort" />
+              <Bar dataKey="red"   name="Rood"  fill="#ef4444" stackId="effort" />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
       <div className="card lg:col-span-3">
-        <h3 className="font-semibold mb-2">Resting HR (week)</h3>
+        <h3 className="font-semibold mb-2">Rusthartslag (week)</h3>
         {rhrData.length ? (
           <div style={{ width:'100%', height:260 }}>
             <ResponsiveContainer>
@@ -148,10 +144,8 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
               </LineChart>
             </ResponsiveContainer>
           </div>
-        ) : <div className="text-sm text-slate-600">No RHR entries this week.</div>}
+        ) : <div className="text-sm text-slate-600">Geen RHR-metingen deze week.</div>}
       </div>
     </div>
   );
 }
-
-
