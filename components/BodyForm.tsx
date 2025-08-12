@@ -36,14 +36,15 @@ export function BodyForm() {
   return (
     <div className="card vstack">
       <h2 className="text-lg font-semibold">Lichaamsmaten toevoegen</h2>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="min-w-0">
           <div className="label">Datum</div>
-          <input type="date" value={date} onChange={e=>setDate(e.target.value)} />
+          <input className="w-full min-w-0" type="date" value={date} onChange={e=>setDate(e.target.value)} />
         </div>
-        <div>
+        <div className="min-w-0">
           <div className="label">Lengte (cm)</div>
           <input
+            className="w-full min-w-0"
             type="number"
             min={50}
             max={250}
@@ -51,9 +52,10 @@ export function BodyForm() {
             onChange={e=>setHeight(e.target.value ? parseFloat(e.target.value) : '')}
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <div className="label">Gewicht (kg)</div>
           <input
+            className="w-full min-w-0"
             type="number"
             min={10}
             max={200}
