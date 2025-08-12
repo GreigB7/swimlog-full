@@ -10,6 +10,9 @@ type BodyRow = { id: string; entry_date: string; height_cm: number | null; weigh
 
 type EditTarget = { kind: 'train'|'rhr'|'body', id: string } | null;
 
+const EFFORTS = ['Green','White','Red'] as const;
+const COMPLEXITIES = [1,2,3] as const;
+
 function weekBounds(isoDate: string) {
   const d = new Date(isoDate + "T00:00:00");
   const day = d.getDay() || 7; // Monday = 1
@@ -76,8 +79,22 @@ export function WeeklyTables({ userId, canEdit, date } : { userId: string, canEd
                   <td>{isEdit ? <input value={(vals.session_type ?? r.session_type) || ''} onChange={e=>setVals({...vals, session_type:e.target.value})} /> : (r.session_type || '')}</td>
                   <td>{isEdit ? <input type="number" value={(vals.duration_minutes ?? r.duration_minutes) ?? ''} onChange={e=>setVals({...vals, duration_minutes:e.target.value?parseInt(e.target.value):null})} /> : (r.duration_minutes ?? '')}</td>
                   <td>{isEdit ? <input type="number" value={(vals.heart_rate ?? r.heart_rate) ?? ''} onChange={e=>setVals({...vals, heart_rate:e.target.value?parseInt(e.target.value):null})} /> : (r.heart_rate ?? '')}</td>
-                  <td>{isEdit ? <input value={(vals.effort_color ?? r.effort_color) || ''} onChange={e=>setVals({...vals, effort_color:e.target.value})} /> : (r.effort_color || '')}</td>
-                  <td>{isEdit ? <input type="number" min={1} max={3} value={(vals.complexity ?? r.complexity) ?? ''} onChange={e=>setVals({...vals, complexity:e.target.value?parseInt(e.target.value):null})} /> : (r.complexity ?? '')}</td>
+                  <td>
+                    {isEdit ? (
+                      <select value={(vals.effort_color ?? r.effort_color) || ''} onChange={e=>setVals({...vals, effort_color:e.target.value})}>
+                        <option value=""></option>
+                        {EFFORTS.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    ) : (r.effort_color || '')}
+                  </td>
+                  <td>
+                    {isEdit ? (
+                      <select value={(vals.complexity ?? r.complexity) ?? ''} onChange={e=>setVals({...vals, complexity:e.target.value?parseInt(e.target.value):null})}>
+                        <option value=""></option>
+                        {COMPLEXITIES.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    ) : (r.complexity ?? '')}
+                  </td>
                   <td>{isEdit ? <input value={(vals.details ?? r.details) || ''} onChange={e=>setVals({...vals, details:e.target.value})} /> : (r.details || '')}</td>
                   <td className="text-right">
                     {canEdit ? (
