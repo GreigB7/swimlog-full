@@ -1,4 +1,15 @@
 'use client'
+import MagicLinkForm from '@/components/MagicLinkForm';
+
+export default function Page() {
+  return (
+    <main className="p-6">
+      <MagicLinkForm />
+    </main>
+  );
+}
+
+'use client'
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
