@@ -45,7 +45,7 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
     })();
   }, [userId, start, end]);
 
-  // Pie: total minutes by type (unchanged)
+  // Pie: total minutes by raw session_type (Morning Swim / Afternoon Swim / Land Training / Other)
   const pieData = useMemo(() => {
     const acc: Record<string, number> = {};
     for (const r of train) {
@@ -56,7 +56,20 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
     return Object.entries(acc).map(([name, value]) => ({ name, value }));
   }, [train]);
 
-  // Stacked bar by day, but now by EFFORT colors (green/white/red)
+  // NEW: easy-to-read totals (combine Morning+Afternoon → Swim)
+  const totals = useMemo(() => {
+    let swim = 0, land = 0, other = 0;
+    for (const r of train) {
+      const minutes = r.duration_minutes ?? 0;
+      const t = (r.session_type || '').toLowerCase();
+      if (t === 'morning swim' || t === 'afternoon swim') swim += minutes;
+      else if (t === 'land training') land += minutes;
+      else other += minutes;
+    }
+    return { swim, land, other, total: swim + land + other };
+  }, [train]);
+
+  // Stacked bar by day, grouped by Effort
   const byDay = useMemo(() => {
     const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
     const map: Record<string, { day: string; green: number; white: number; red: number }> = {};
@@ -71,7 +84,7 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
     return days.map(d => map[d]);
   }, [train]);
 
-  // Weekly RHR line (unchanged)
+  // Weekly RHR line
   const rhrData = useMemo(() => rhr.map(r => ({ date: r.entry_date, rhr: r.resting_heart_rate || null })), [rhr]);
 
   return (
@@ -79,14 +92,36 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
       <div className="card">
         <h3 className="font-semibold mb-2">Training Type Distribution (week)</h3>
         {pieData.length ? (
-          <div style={{ width:'100%', height:260 }}>
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie dataKey="value" nameKey="name" data={pieData} outerRadius={100} />
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+          <>
+            <div style={{ width:'100%', height:260 }}>
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie dataKey="value" nameKey="name" data={pieData} outerRadius={100} />
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* NEW: Totals below the pie */}
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              <div className="p-2 rounded-md bg-slate-50 border">
+                <div className="text-xs text-slate-500">Swim (Morning+Afternoon)</div>
+                <div className="font-semibold">{totals.swim} min</div>
+              </div>
+              <div className="p-2 rounded-md bg-slate-50 border">
+                <div className="text-xs text-slate-500">Land Training</div>
+                <div className="font-semibold">{totals.land} min</div>
+              </div>
+              <div className="p-2 rounded-md bg-slate-50 border">
+                <div className="text-xs text-slate-500">Other</div>
+                <div className="font-semibold">{totals.other} min</div>
+              </div>
+              <div className="p-2 rounded-md bg-slate-50 border">
+                <div className="text-xs text-slate-500">Total</div>
+                <div className="font-semibold">{totals.total} min</div>
+              </div>
+            </div>
+          </>
         ) : <div className="text-sm text-slate-600">No training this week.</div>}
       </div>
 
@@ -96,7 +131,6 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
           <ResponsiveContainer>
             <BarChart data={byDay}>
               <XAxis dataKey="day" /><YAxis /><Tooltip /><Legend />
-              {/* Effort colors */}
               <Bar dataKey="green" name="Green" fill="#22c55e" stackId="effort" />
               <Bar dataKey="white" name="White" fill="#e5e7eb" stroke="#9ca3af" stackId="effort" />
               <Bar dataKey="red"   name="Red"   fill="#ef4444" stackId="effort" />
@@ -121,4 +155,5 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
     </div>
   );
 }
+
 
