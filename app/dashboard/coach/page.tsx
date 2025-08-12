@@ -6,6 +6,7 @@ import { WeeklyTables } from "@/components/WeeklyTables";
 import { EightWeekChart } from "@/components/EightWeekChart";
 import { WeeklyCharts } from "@/components/WeeklyCharts";
 import { AllTimeTrends } from "@/components/AllTimeTrends";
+import { WeeklyTotals } from "@/components/WeeklyTotals"; // <-- NEW
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
@@ -43,6 +44,7 @@ export default function CoachPage() {
 
       {mode === 'week' ? (
         <>
+          <WeeklyTotals userId={userId} date={date} />        {/* <-- NEW totals card */}
           <WeeklyCharts userId={userId} date={date} />
           <WeeklyTables userId={userId} canEdit={false} date={date} />
         </>
