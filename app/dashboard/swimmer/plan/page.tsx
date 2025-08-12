@@ -20,9 +20,18 @@ export default function SwimmerPlanPage() {
 
   return (
     <div className="vstack gap-6">
-      <div className="card">
-        <h1 className="text-xl font-semibold">Techniekplan</h1>
-        <p className="text-sm text-slate-600">Dit is jouw techniekplan zoals ingesteld door de coach.</p>
+      <div className="card flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold">Techniekplan</h1>
+          <p className="text-sm text-slate-600">Dit is jouw techniekplan zoals ingesteld door de coach.</p>
+        </div>
+        <a
+          href="/dashboard/swimmer/plan/print"
+          target="_blank" rel="noopener"
+          className="btn"
+        >
+          Print / PDF
+        </a>
       </div>
 
       {userId ? <TechniquePlanViewer userId={userId} /> : null}
