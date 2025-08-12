@@ -7,7 +7,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// DB values stay English; UI labels are Dutch
+// DB values (English), UI labels (Dutch)
 type SessionType = 'Morning Swim' | 'Afternoon Swim' | 'Land Training' | 'Other Activity';
 type Effort = 'Green' | 'White' | 'Red';
 
@@ -53,4 +53,108 @@ export function TrainingForm() {
       details
     });
 
-    if (error) setMsg(error.message
+    if (error) {
+      setMsg(error.message);
+    } else {
+      setMsg('Opgeslagen.');
+      setDur('');
+      setHr('');
+      setDetails('');
+    }
+  }
+
+  return (
+    <div className="card vstack">
+      <h2 className="text-lg font-semibold">Training toevoegen</h2>
+
+      {/* 1 col on phones, 2 cols from sm+ */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="min-w-0">
+          <div className="label">Datum</div>
+          <input
+            className="w-full min-w-0"
+            type="date"
+            value={date}
+            onChange={e => setDate(e.target.value)}
+          />
+        </div>
+
+        <div className="min-w-0">
+          <div className="label">Type</div>
+          <select
+            className="w-full min-w-0"
+            value={type}
+            onChange={e => setType(e.target.value as SessionType)}
+          >
+            {TYPE_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="min-w-0">
+          <div className="label">Duur (min)</div>
+          <input
+            className="w-full min-w-0"
+            type="number"
+            min={1}
+            value={dur}
+            onChange={e => setDur(e.target.value ? parseInt(e.target.value) : '')}
+          />
+        </div>
+
+        <div className="min-w-0">
+          <div className="label">Hartslag</div>
+          <input
+            className="w-full min-w-0"
+            type="number"
+            min={30}
+            max={250}
+            value={hr}
+            onChange={e => setHr(e.target.value ? parseInt(e.target.value) : '')}
+          />
+        </div>
+
+        <div className="min-w-0">
+          <div className="label">Inspanning</div>
+          <select
+            className="w-full min-w-0"
+            value={effort}
+            onChange={e => setEffort(e.target.value as Effort)}
+          >
+            {EFFORT_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="min-w-0">
+          <div className="label">Complexiteit</div>
+          <select
+            className="w-full min-w-0"
+            value={cx as any}
+            onChange={e => setCx(e.target.value ? (parseInt(e.target.value) as (typeof COMPLEXITIES)[number]) : '' as any)}
+          >
+            <option value=""></option>
+            {COMPLEXITIES.map(v => <option key={v} value={v}>{v}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div className="min-w-0">
+        <div className="label">Details</div>
+        <textarea
+          className="w-full min-w-0"
+          rows={3}
+          value={details}
+          onChange={e => setDetails(e.target.value)}
+        />
+      </div>
+
+      <div className="hstack">
+        <button className="btn" onClick={add}>Opslaan</button>
+        <div className="text-sm text-slate-600">{msg}</div>
+      </div>
+    </div>
+  );
+}
