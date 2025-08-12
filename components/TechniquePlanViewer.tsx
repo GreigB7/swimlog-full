@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import type { PlanData } from './TechniquePlanEditor';
+import { PrintButton } from '@/components/PrintButton';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -39,6 +40,15 @@ export function TechniquePlanViewer({ userId }: { userId: string }) {
       });
     })();
   }, [userId]);
+
+  <div className="card print:hidden">
+  <div className="flex items-center justify-between">
+    <h1 className="text-xl font-semibold">Techniekplan</h1>
+    <PrintButton />
+  </div>
+  <p className="text-sm text-slate-600">Dit is jouw techniekplan zoals ingesteld door de coach.</p>
+</div>
+
 
   if (msg) return <div className="card">{msg}</div>;
   if (!plan) return <div className="card">Nog geen techniekplan beschikbaar.</div>;
