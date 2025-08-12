@@ -11,17 +11,38 @@ import { WeeklyCharts } from "@/components/WeeklyCharts";
 import { AllTimeTrends } from "@/components/AllTimeTrends";
 import { WeeklyTotals } from "@/components/WeeklyTotals";
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+type ProfileRow = { username: string | null; email: string | null; role?: string | null };
 
 export default function SwimmerPage() {
   const [userId, setUserId] = useState<string>('');
   const [mode, setMode] = useState<'week'|'8weeks'>('week');
   const [date, setDate] = useState<string>(() => new Date().toISOString().slice(0,10));
 
+  const [username, setUsername] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.id) setUserId(session.user.id);
+      if (session?.user) {
+        setUserId(session.user.id);
+        setEmail(session.user.email || '');
+
+        // Try to load username (and possibly email) from profiles
+        const { data } = await supabase
+          .from('profiles')
+          .select('username,email')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        if (data?.username) setUsername(String(data.username));
+        if (data?.email) setEmail(String(data.email)); // prefer profiles.email if present
+      }
     })();
   }, []);
 
@@ -29,7 +50,18 @@ export default function SwimmerPage() {
     <div className="vstack gap-6">
       <div className="card">
         <h1 className="text-xl font-semibold">Dashboard zwemmer</h1>
-        <p className="text-sm text-slate-600">Bekijk je gegevens per week of de laatste 8 weken. Je kunt fouten direct corrigeren.</p>
+        <p className="text-sm text-slate-600">
+          Bekijk je gegevens per week of de laatste 8 weken. Je kunt fouten direct corrigeren.
+        </p>
+
+        {/* Who is logged in */}
+        <div className="mt-3 text-sm">
+          Ingelogd als{" "}
+          <strong>{username || email || '—'}</strong>
+          {username && email ? (
+            <> <span className="text-slate-500">({email})</span></>
+          ) : null}
+        </div>
       </div>
 
       <WeekControls mode={mode} setMode={setMode} date={date} setDate={setDate} />
