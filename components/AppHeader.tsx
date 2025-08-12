@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import type { Route } from 'next';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -37,17 +38,19 @@ export function AppHeader() {
     })();
   }, []);
 
-  const links: { href: string; label: string; show: boolean }[] = [
-    // Swimmer
-    { href: '/dashboard/swimmer',      label: 'Zwemmer',     show: role === 'swimmer' },
-    { href: '/dashboard/swimmer/plan', label: 'Techniekplan',show: role === 'swimmer' },
+  // Typed routes so <Link> is happy with typedRoutes enabled
+  const links: { href: Route; label: string; show: boolean }[] = [
+    // swimmer
+    { href: '/' as Route,                       label: 'Start',        show: true },
+    { href: '/dashboard/swimmer' as Route,      label: 'Zwemmer',      show: role === 'swimmer' },
+    { href: '/dashboard/swimmer/plan' as Route, label: 'Techniekplan', show: role === 'swimmer' },
 
-    // Coach
-    { href: '/dashboard/coach',        label: 'Coach',       show: role === 'coach' },
-    { href: '/dashboard/coach/plan',   label: 'Plan bewerken', show: role === 'coach' },
+    // coach
+    { href: '/dashboard/coach' as Route,        label: 'Coach',        show: role === 'coach' },
+    { href: '/dashboard/coach/plan' as Route,   label: 'Plan bewerken',show: role === 'coach' },
   ];
 
-  function isActive(href: string) {
+  function isActive(href: Route) {
     return pathname === href || pathname?.startsWith(href + '/');
   }
 
@@ -59,7 +62,7 @@ export function AppHeader() {
   return (
     <header className="bg-slate-900 text-white sticky top-0 z-50">
       <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="font-semibold tracking-tight">Zwem Logboek</Link>
+        <Link href={'/' as Route} className="font-semibold tracking-tight">Zwem Logboek</Link>
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-2">
@@ -83,7 +86,7 @@ export function AppHeader() {
               </button>
             </div>
           ) : (
-            <Link href="/" className="ml-3 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm">
+            <Link href={'/' as Route} className="ml-3 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm">
               Inloggen
             </Link>
           )}
@@ -127,7 +130,7 @@ export function AppHeader() {
               </button>
             ) : (
               <Link
-                href="/"
+                href={'/' as Route}
                 onClick={() => setOpen(false)}
                 className="mx-3 mb-2 block px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-center"
               >
