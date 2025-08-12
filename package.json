@@ -1,0 +1,30 @@
+{
+  "name": "swimlog-full",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "14.2.5",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "@supabase/supabase-js": "2.45.4",
+    "@supabase/ssr": "0.4.0",
+    "recharts": "2.12.7",
+    "zod": "3.23.8"
+  },
+  "devDependencies": {
+    "typescript": "5.4.5",
+    "eslint": "8.57.0",
+    "@types/node": "20.12.7",
+    "@types/react": "18.2.66",
+    "@types/react-dom": "18.2.22",
+    "tailwindcss": "3.4.4",
+    "postcss": "8.4.38",
+    "autoprefixer": "10.4.19"
+  }
+}
