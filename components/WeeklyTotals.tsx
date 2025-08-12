@@ -15,7 +15,7 @@ type Row = {
 
 function weekBounds(isoDate: string) {
   const d = new Date(isoDate + "T00:00:00");
-  const day = d.getDay() || 7; // Monday = 1
+  const day = d.getDay() || 7; // maandag = 1
   const start = new Date(d);
   start.setDate(d.getDate() - (day - 1));
   const end = new Date(start);
@@ -24,7 +24,7 @@ function weekBounds(isoDate: string) {
   return { start: toStr(start), end: toStr(end) };
 }
 
-// Props are now OPTIONAL. If missing, we resolve them inside.
+// Props zijn optioneel: als userId of date ontbreekt, halen we ze zelf op.
 export function WeeklyTotals({
   userId: userIdProp,
   date: dateProp,
@@ -36,7 +36,6 @@ export function WeeklyTotals({
   const date = dateProp ?? new Date().toISOString().slice(0, 10);
   const { start, end } = useMemo(() => weekBounds(date), [date]);
 
-  // If userId not provided, get it from the current session.
   useEffect(() => {
     if (userIdProp) {
       setUserId(userIdProp);
@@ -59,7 +58,7 @@ export function WeeklyTotals({
         .eq("user_id", userId)
         .gte("training_date", start)
         .lte("training_date", end);
-      setRows(data ?? []);
+      setRows((data ?? []) as Row[]);
     })();
   }, [userId, start, end]);
 
@@ -77,22 +76,22 @@ export function WeeklyTotals({
 
   return (
     <div className="card">
-      <h2 className="text-lg font-semibold mb-3">Weekly Totals (Mon–Sun)</h2>
+      <h2 className="text-lg font-semibold mb-3">Weektotalen (ma–zo) — {start} → {end}</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="p-3 rounded-lg bg-slate-50 border">
-          <div className="text-xs text-slate-500">Swim</div>
+          <div className="text-xs text-slate-500">Zwemmen</div>
           <div className="text-xl font-semibold">{swim} min</div>
         </div>
         <div className="p-3 rounded-lg bg-slate-50 border">
-          <div className="text-xs text-slate-500">Land</div>
+          <div className="text-xs text-slate-500">Landtraining</div>
           <div className="text-xl font-semibold">{land} min</div>
         </div>
         <div className="p-3 rounded-lg bg-slate-50 border">
-          <div className="text-xs text-slate-500">Other</div>
+          <div className="text-xs text-slate-500">Overig</div>
           <div className="text-xl font-semibold">{other} min</div>
         </div>
         <div className="p-3 rounded-lg bg-slate-50 border">
-          <div className="text-xs text-slate-500">Total</div>
+          <div className="text-xs text-slate-500">Totaal</div>
           <div className="text-xl font-semibold">{total} min</div>
         </div>
       </div>
