@@ -34,7 +34,7 @@ export function AllTimeTrends({ userId }: { userId: string }) {
   return (
     <div className="vstack gap-6">
       <div className="card">
-        <h3 className="font-semibold mb-2">All-time Resting HR</h3>
+        <h3 className="font-semibold mb-2">Rusthartslag — historie</h3>
         {rhrData.length ? (
           <div style={{ width:'100%', height:260 }}>
             <ResponsiveContainer>
@@ -44,11 +44,11 @@ export function AllTimeTrends({ userId }: { userId: string }) {
               </LineChart>
             </ResponsiveContainer>
           </div>
-        ) : <div className="text-sm text-slate-600">No RHR data yet.</div>}
+        ) : <div className="text-sm text-slate-600">Nog geen RHR-gegevens.</div>}
       </div>
 
       <div className="card">
-        <h3 className="font-semibold mb-2">All-time Height</h3>
+        <h3 className="font-semibold mb-2">Lengte — historie</h3>
         {heightData.length ? (
           <div style={{ width:'100%', height:260 }}>
             <ResponsiveContainer>
@@ -58,11 +58,11 @@ export function AllTimeTrends({ userId }: { userId: string }) {
               </LineChart>
             </ResponsiveContainer>
           </div>
-        ) : <div className="text-sm text-slate-600">No height entries yet.</div>}
+        ) : <div className="text-sm text-slate-600">Nog geen lengtemetingen.</div>}
       </div>
 
       <div className="card">
-        <h3 className="font-semibold mb-2">All-time Weight</h3>
+        <h3 className="font-semibold mb-2">Gewicht — historie</h3>
         {weightData.length ? (
           <div style={{ width:'100%', height:260 }}>
             <ResponsiveContainer>
@@ -72,8 +72,9 @@ export function AllTimeTrends({ userId }: { userId: string }) {
               </LineChart>
             </ResponsiveContainer>
           </div>
-        ) : <div className="text-sm text-slate-600">No weight entries yet.</div>}
+        ) : <div className="text-sm text-slate-600">Nog geen gewichtmetingen.</div>}
       </div>
     </div>
   );
 }
+
