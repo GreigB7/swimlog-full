@@ -1,19 +1,19 @@
-import "./globals.css";
-import Link from "next/link";
+// app/layout.tsx
+import './globals.css';
+import type { Metadata } from 'next';
+import { AppHeader } from '@/components/AppHeader';
 
-export const metadata = { title: "Swim Log", description: "Supabase + Next.js" };
+export const metadata: Metadata = {
+  title: 'Zwem Logboek',
+  description: 'Logboek voor zwemmers en coaches',
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-slate-50 text-slate-900">
-        <header className="border-b bg-white">
-          <nav className="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
-            <Link href="/" className="font-semibold">Swim Log</Link>
-            <div className="text-sm text-slate-600">Next.js + Supabase</div>
-          </nav>
-        </header>
-        <main className="max-w-5xl mx-auto p-4">{children}</main>
+    <html lang="nl">
+      <body className="bg-slate-50 text-slate-900">
+        <AppHeader />
+        <main className="mx-auto max-w-6xl p-4">{children}</main>
       </body>
     </html>
   );
