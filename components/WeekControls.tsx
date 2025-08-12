@@ -1,20 +1,47 @@
 'use client'
-import clsx from "clsx";
+import React from 'react';
 
-export function WeekControls({ mode, setMode, date, setDate } : {
-  mode: 'week'|'8weeks', setMode: (m:'week'|'8weeks')=>void, date: string, setDate: (d:string)=>void
-}) {
+type Props = {
+  mode: 'week' | '8weeks';
+  setMode: (m: 'week' | '8weeks') => void;
+  date: string;                // ISO yyyy-mm-dd (valt binnen de gewenste week)
+  setDate: (d: string) => void;
+};
+
+export function WeekControls({ mode, setMode, date, setDate }: Props) {
   return (
     <div className="card">
-      <div className="flex flex-wrap items-center gap-3 justify-between">
-        <div className="hstack">
-          <button className={clsx('btn', mode==='week' ? '' : 'bg-slate-600 hover:bg-slate-700')} onClick={()=>setMode('week')}>Week</button>
-          <button className={clsx('btn', mode==='8weeks' ? '' : 'bg-slate-600 hover:bg-slate-700')} onClick={()=>setMode('8weeks')}>Last 8 Weeks</button>
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <div className="text-sm text-slate-600 mb-1">Weergave</div>
+          <div className="inline-flex rounded-lg border overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setMode('week')}
+              className={`px-3 py-2 text-sm ${mode === 'week' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700'}`}
+              aria-pressed={mode === 'week'}
+            >
+              Week
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('8weeks')}
+              className={`px-3 py-2 text-sm border-l ${mode === '8weeks' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700'}`}
+              aria-pressed={mode === '8weeks'}
+            >
+              Laatste 8 weken
+            </button>
+          </div>
         </div>
-        {mode==='week' && (
-          <div className="hstack">
-            <div className="label">Week containing date:</div>
-            <input type="date" value={date} onChange={e=>setDate(e.target.value)} />
+
+        {mode === 'week' && (
+          <div>
+            <label className="label">Referentiedatum (valt binnen de week)</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
           </div>
         )}
       </div>
