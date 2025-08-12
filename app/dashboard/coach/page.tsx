@@ -6,7 +6,7 @@ import { WeeklyTables } from "@/components/WeeklyTables";
 import { EightWeekChart } from "@/components/EightWeekChart";
 import { WeeklyCharts } from "@/components/WeeklyCharts";
 import { AllTimeTrends } from "@/components/AllTimeTrends";
-import { WeeklyTotals } from "@/components/WeeklyTotals"; // <-- NEW
+import { WeeklyTotals } from "@/components/WeeklyTotals";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
@@ -30,10 +30,10 @@ export default function CoachPage() {
   return (
     <div className="vstack gap-6">
       <div className="card">
-        <h1 className="text-xl font-semibold">Coach Dashboard</h1>
-        <p className="text-sm text-slate-600">Read-only. Select a swimmer and view by week or last 8 weeks.</p>
+        <h1 className="text-xl font-semibold">Dashboard coach</h1>
+        <p className="text-sm text-slate-600">Alleen lezen. Kies een zwemmer en bekijk per week of de laatste 8 weken.</p>
         <div className="mt-3">
-          <label className="label">Swimmer</label>
+          <label className="label">Zwemmer</label>
           <select value={userId} onChange={e=>setUserId(e.target.value)} className="w-80">
             {swimmers.map(s => <option key={s.id} value={s.id}>{s.username || s.email}</option>)}
           </select>
@@ -44,7 +44,7 @@ export default function CoachPage() {
 
       {mode === 'week' ? (
         <>
-          <WeeklyTotals userId={userId} date={date} />        {/* <-- NEW totals card */}
+          <WeeklyTotals userId={userId} date={date} />
           <WeeklyCharts userId={userId} date={date} />
           <WeeklyTables userId={userId} canEdit={false} date={date} />
         </>
@@ -56,3 +56,4 @@ export default function CoachPage() {
     </div>
   );
 }
+
