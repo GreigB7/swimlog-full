@@ -1,9 +1,7 @@
 'use client'
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend
-} from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,7 +12,7 @@ type Row = {
   training_date: string;
   session_type: string | null;
   duration_minutes: number | null;
-  effort_color: string | null; // <-- we use this now
+  effort_color: string | null;
 };
 
 function isoWeekStart(d: Date) {
@@ -41,7 +39,7 @@ export function EightWeekChart({ userId }: { userId: string }) {
       const sinceStr = since.toISOString().slice(0, 10);
       const { data, error } = await supabase
         .from('training_log')
-        .select('training_date, session_type, duration_minutes, effort_color') // <-- includes effort_color
+        .select('training_date, session_type, duration_minutes, effort_color')
         .eq('user_id', userId)
         .gte('training_date', sinceStr)
         .order('training_date', { ascending: true });
@@ -49,7 +47,7 @@ export function EightWeekChart({ userId }: { userId: string }) {
     })();
   }, [userId]);
 
-  // Mode 1: stack by Effort (Green / White / Red)
+  // Modus 1: gestapeld per Inspanning (Groen / Wit / Rood)
   const byEffort = useMemo(() => {
     const map = new Map<string, { week: string; green: number; white: number; red: number; total: number }>();
     for (const r of rows) {
@@ -62,14 +60,14 @@ export function EightWeekChart({ userId }: { userId: string }) {
       const e = (r.effort_color || 'white').toLowerCase();
       if (e === 'green') bucket.green += r.duration_minutes;
       else if (e === 'red') bucket.red += r.duration_minutes;
-      else bucket.white += r.duration_minutes; // default bucket
+      else bucket.white += r.duration_minutes;
 
       bucket.total += r.duration_minutes;
     }
     return Array.from(map.values());
   }, [rows]);
 
-  // Mode 2: grouped by Type (Swim / Land / Other)
+  // Modus 2: gegroepeerd per Type (Zwemmen / Land / Overig)
   const byType = useMemo(() => {
     const map = new Map<string, { week: string; swim: number; land: number; other: number; total: number }>();
     for (const r of rows) {
@@ -92,58 +90,58 @@ export function EightWeekChart({ userId }: { userId: string }) {
   return (
     <div className="card">
       <div className="flex items-center justify-between mb-2">
-        <h2 className="text-lg font-semibold">Last 8 Weeks Overview</h2>
+        <h2 className="text-lg font-semibold">Overzicht laatste 8 weken</h2>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-600">View:</span>
+          <span className="text-sm text-slate-600">Weergave:</span>
           <select
             className="border rounded px-2 py-1 text-sm"
             value={mode}
             onChange={(e) => setMode(e.target.value as 'effort' | 'type')}
           >
-            <option value="effort">By Effort (stacked Green/White/Red)</option>
-            <option value="type">By Type (Swim/Land/Other)</option>
+            <option value="effort">Op inspanning (gestapeld Groen/Wit/Rood)</option>
+            <option value="type">Op type (Zwemmen/Land/Overig)</option>
           </select>
         </div>
       </div>
 
       {mode === 'effort' ? (
         !byEffort.length ? (
-          <div className="text-sm text-slate-600">No data yet.</div>
+          <div className="text-sm text-slate-600">Nog geen gegevens.</div>
         ) : (
           <div style={{ width: "100%", height: 280 }}>
             <ResponsiveContainer>
               <BarChart data={byEffort}>
                 <XAxis dataKey="week" />
                 <YAxis />
-                <Tooltip formatter={(v: any) => [`${v} min`, 'Minutes']} />
+                <Tooltip formatter={(v: any) => [`${v} min`, 'Minuten']} />
                 <Legend
                   payload={[
-                    { value: 'Green Effort', type: 'square', color: '#22c55e', id: 'green' },
-                    { value: 'White Effort', type: 'square', color: '#e5e7eb', id: 'white' },
-                    { value: 'Red Effort',   type: 'square', color: '#ef4444', id: 'red'   },
+                    { value: 'Groen (inspanning)', type: 'square', color: '#22c55e', id: 'green' },
+                    { value: 'Wit (inspanning)',   type: 'square', color: '#e5e7eb', id: 'white' },
+                    { value: 'Rood (inspanning)',  type: 'square', color: '#ef4444', id: 'red'   },
                   ]}
                 />
-                <Bar dataKey="green" stackId="effort" fill="#22c55e" name="Green Effort" />
-                <Bar dataKey="white" stackId="effort" fill="#e5e7eb" stroke="#9ca3af" name="White Effort" />
-                <Bar dataKey="red"   stackId="effort" fill="#ef4444" name="Red Effort" />
+                <Bar dataKey="green" stackId="effort" fill="#22c55e" name="Groen (inspanning)" />
+                <Bar dataKey="white" stackId="effort" fill="#e5e7eb" stroke="#9ca3af" name="Wit (inspanning)" />
+                <Bar dataKey="red"   stackId="effort" fill="#ef4444" name="Rood (inspanning)" />
               </BarChart>
             </ResponsiveContainer>
           </div>
         )
       ) : (
         !byType.length ? (
-          <div className="text-sm text-slate-600">No data yet.</div>
+          <div className="text-sm text-slate-600">Nog geen gegevens.</div>
         ) : (
           <div style={{ width: "100%", height: 280 }}>
             <ResponsiveContainer>
               <BarChart data={byType}>
                 <XAxis dataKey="week" />
                 <YAxis />
-                <Tooltip formatter={(v: any) => [`${v} min`, 'Minutes']} />
+                <Tooltip formatter={(v: any) => [`${v} min`, 'Minuten']} />
                 <Legend />
-                <Bar dataKey="swim"  name="Swim (min)"  fill="#3b82f6" />
-                <Bar dataKey="land"  name="Land (min)"  fill="#f59e0b" />
-                <Bar dataKey="other" name="Other (min)" fill="#94a3b8" />
+                <Bar dataKey="swim"  name="Zwemmen (min)" fill="#3b82f6" />
+                <Bar dataKey="land"  name="Land (min)"    fill="#f59e0b" />
+                <Bar dataKey="other" name="Overig (min)"  fill="#94a3b8" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -152,4 +150,5 @@ export function EightWeekChart({ userId }: { userId: string }) {
     </div>
   );
 }
+
 
