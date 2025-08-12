@@ -121,3 +121,4 @@ export function WeeklyCharts({ userId, date }: { userId: string, date: string })
     </div>
   );
 }
+
