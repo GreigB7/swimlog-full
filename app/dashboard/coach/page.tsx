@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-import { WeeklyTotals } from '@/components/WeeklyTotals';
+import { WeeklyTotals } from '@/WeeklyTotals'; // NOTE: WeeklyTotals is at repo root
 import { TrainingTypeDistribution } from '@/components/TrainingTypeDistribution';
 import { Workload8Chart } from '@/components/Workload8Chart';
 
@@ -13,14 +13,12 @@ const supabase = createClient(
 );
 
 type Person = { id: string; username: string | null; email: string | null };
-type ViewMode = 'week' | '8weeks';
 
 export default function CoachDashboardPage() {
   const [isCoach, setIsCoach] = useState(false);
   const [swimmers, setSwimmers] = useState<Person[]>([]);
   const [selected, setSelected] = useState<string>('');
   const [dateISO, setDateISO] = useState<string>(new Date().toISOString().slice(0,10));
-  const [mode, setMode] = useState<ViewMode>('week');
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<string>('');
 
@@ -64,19 +62,11 @@ export default function CoachDashboardPage() {
   return (
     <div className="vstack gap-6">
       <div className="card">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="grid gap-3 sm:grid-cols-2 items-end">
           <div>
             <h1 className="text-xl font-semibold">Coach dashboard</h1>
             <p className="text-sm text-slate-600">Kies een zwemmer en bekijk de gegevens.</p>
           </div>
-
-          <div className="flex items-center gap-2">
-            <button className={`btn ${mode==='week' ? 'bg-slate-900 text-white' : ''}`} onClick={()=>setMode('week')}>Week</button>
-            <button className={`btn ${mode==='8weeks' ? 'bg-slate-900 text-white' : ''}`} onClick={()=>setMode('8weeks')}>Laatste 8 weken</button>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div>
             <label className="label">Zwemmer</label>
             <select className="w-full" value={selected} onChange={(e)=>setSelected(e.target.value)}>
@@ -85,13 +75,18 @@ export default function CoachDashboardPage() {
               ))}
             </select>
           </div>
+        </div>
 
-          {mode === 'week' && (
-            <div>
-              <label className="label">Week (datum in die week)</label>
-              <input type="date" className="w-full sm:w-auto" value={dateISO} onChange={(e)=>setDateISO(e.target.value)} />
-            </div>
-          )}
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div>
+            <label className="label">Week (datum in die week)</label>
+            <input
+              type="date"
+              className="w-full sm:w-auto"
+              value={dateISO}
+              onChange={(e)=>setDateISO(e.target.value)}
+            />
+          </div>
         </div>
 
         {msg && <div className="mt-2 text-sm text-rose-600">{msg}</div>}
@@ -99,17 +94,20 @@ export default function CoachDashboardPage() {
 
       {!selected ? (
         <div className="card">Geen zwemmer geselecteerd.</div>
-      ) : mode === 'week' ? (
-        <>
-          <WeeklyTotals userId={selected} date={dateISO} />
-          <TrainingTypeDistribution userId={selected} date={dateISO} />
-        </>
       ) : (
         <>
+          {/* Weekly summary numbers */}
+          <WeeklyTotals userId={selected} date={dateISO} />
+
+          {/* Weekly distribution (bars per day) */}
+          <TrainingTypeDistribution userId={selected} date={dateISO} />
+
+          {/* 8-week workload grouped bars */}
           <Workload8Chart userId={selected} />
         </>
       )}
     </div>
   );
 }
+
 
