@@ -1,150 +1,84 @@
-'use client'
-
-import { useEffect, useState } from 'react';
+'use client';
+import React, { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
-
-// ⬇️ If WeeklyTotals is a **default export**, change the next line to:
-// import WeeklyTotals from '@/components/WeeklyTotals';
-import { WeeklyTotals } from '@/components/WeeklyTotals';
-
-import { TrainingTypeDistribution } from '@/components/TrainingTypeDistribution';
-import { Workload8Chart } from '@/components/Workload8Chart';
+import { ResponsiveContainer, PieChart, Pie, Cell, Legend, Tooltip } from 'recharts';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-type Person = { id: string; username: string | null; email: string | null };
-type ViewMode = 'week' | '8weeks';
+type Props = { userId: string; date: string };
 
-export default function CoachDashboardPage() {
-  const [isCoach, setIsCoach] = useState(false);
-  const [swimmers, setSwimmers] = useState<Person[]>([]);
-  const [selected, setSelected] = useState<string>('');
-  const [dateISO, setDateISO] = useState<string>(new Date().toISOString().slice(0,10));
-  const [mode, setMode] = useState<ViewMode>('week');
-  const [loading, setLoading] = useState(true);
-  const [msg, setMsg] = useState<string>('');
+// Mon–Sun bounds
+function weekBounds(iso: string) {
+  const d = new Date(iso + 'T00:00:00');
+  const dow = d.getDay() || 7;
+  const start = new Date(d); start.setDate(d.getDate() - (dow - 1));
+  const end = new Date(start); end.setDate(start.getDate() + 6);
+  const f = (x: Date) => x.toISOString().slice(0, 10);
+  return { start: f(start), end: f(end) };
+}
+
+function categorize(type: string) {
+  const t = (type || '').toLowerCase();
+  const isSwim = /(zwem|swim)/.test(t);
+  const isLand = /(land|kracht|dry|droog|gym|core)/.test(t);
+  if (isSwim) return 'Zwemmen';
+  if (isLand) return 'Landtraining';
+  return 'Overig';
+}
+
+const COLORS = ['#3b82f6', '#f59e0b', '#94a3b8']; // blue, amber, slate
+
+const TrainingTypePieWeek: React.FC<Props> = ({ userId, date }) => {
+  const { start, end } = useMemo(() => weekBounds(date), [date]);
+  const [rows, setRows] = useState<any[]>([]);
 
   useEffect(() => {
     (async () => {
-      setLoading(true);
-      setMsg('');
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) { setLoading(false); return; }
-
-      const me = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', session.user.id)
-        .maybeSingle();
-
-      const coach = (me.data?.role || '').toLowerCase() === 'coach';
-      setIsCoach(coach);
-      if (!coach) { setLoading(false); return; }
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, username, email')
-        .eq('role', 'swimmer');
-
-      if (error) { setMsg(error.message); setLoading(false); return; }
-
-      const sorted = (data ?? []).sort((a, b) =>
-        (a.username || a.email || '').localeCompare(b.username || b.email || '')
-      );
-      setSwimmers(sorted);
-      setSelected(sorted[0]?.id || '');
-      setLoading(false);
+      if (!userId) return;
+      const { data } = await supabase
+        .from('training_log')
+        .select('session_type,duration_minutes,training_date')
+        .eq('user_id', userId)
+        .gte('training_date', start)
+        .lte('training_date', end);
+      setRows(data ?? []);
     })();
-  }, []);
+  }, [userId, start, end]);
 
-  if (loading) return <div className="card">Laden…</div>;
-  if (!isCoach) {
-    return (
-      <div className="card">
-        <h1 className="text-xl font-semibold">Coach dashboard</h1>
-        <p className="text-sm text-slate-600">Alleen toegankelijk voor coaches.</p>
-      </div>
-    );
-  }
+  const data = useMemo(() => {
+    const sum = { Zwemmen: 0, Landtraining: 0, Overig: 0 };
+    for (const r of rows) {
+      const cat = categorize(r.session_type || '');
+      // @ts-ignore
+      sum[cat] += Number(r.duration_minutes) || 0;
+    }
+    return [
+      { name: 'Zwemmen', value: sum.Zwemmen },
+      { name: 'Landtraining', value: sum.Landtraining },
+      { name: 'Overig', value: sum.Overig },
+    ];
+  }, [rows]);
 
   return (
-    <div className="vstack gap-6">
-      <div className="card">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="text-xl font-semibold">Coach dashboard</h1>
-            <p className="text-sm text-slate-600">Kies een zwemmer en bekijk de gegevens.</p>
-          </div>
-
-          {/* Toggle buttons: Week / 8 weken */}
-          <div className="flex items-center gap-2">
-            <button
-              className={`btn ${mode==='week' ? 'bg-slate-900 text-white' : ''}`}
-              onClick={() => setMode('week')}
-            >
-              Week
-            </button>
-            <button
-              className={`btn ${mode==='8weeks' ? 'bg-slate-900 text-white' : ''}`}
-              onClick={() => setMode('8weeks')}
-            >
-              Laatste 8 weken
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <div>
-            <label className="label">Zwemmer</label>
-            <select
-              className="w-full"
-              value={selected}
-              onChange={(e)=>setSelected(e.target.value)}
-            >
-              {swimmers.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.username || s.email || s.id}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {mode === 'week' && (
-            <div>
-              <label className="label">Week (datum in die week)</label>
-              <input
-                type="date"
-                className="w-full sm:w-auto"
-                value={dateISO}
-                onChange={(e)=>setDateISO(e.target.value)}
-              />
-            </div>
-          )}
-        </div>
-
-        {msg && <div className="mt-2 text-sm text-rose-600">{msg}</div>}
+    <div className="card">
+      <h3 className="font-semibold mb-2">Verdeling trainingstypes (week)</h3>
+      <div className="h-[260px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie data={data} dataKey="value" nameKey="name" outerRadius={90}>
+              {data.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+            </Pie>
+            <Legend />
+            <Tooltip />
+          </PieChart>
+        </ResponsiveContainer>
       </div>
-
-      {!selected ? (
-        <div className="card">Geen zwemmer geselecteerd.</div>
-      ) : mode === 'week' ? (
-        <>
-          {/* Weekly summary numbers */}
-          <WeeklyTotals userId={selected} date={dateISO} />
-
-          {/* Weekly distribution (bars per day) */}
-          <TrainingTypeDistribution userId={selected} date={dateISO} />
-        </>
-      ) : (
-        <>
-          {/* 8-week workload grouped bars */}
-          <Workload8Chart userId={selected} />
-        </>
-      )}
     </div>
   );
-}
+};
+
+export default TrainingTypePieWeek;
+
