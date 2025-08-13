@@ -3,19 +3,18 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-// ⬇️ If WeeklyTotals is a **default export**, change the next line to:
-// import WeeklyTotals from '@/components/WeeklyTotals';
+// If WeeklyTotals is a default export, use: import WeeklyTotals from '@/components/WeeklyTotals';
 import { WeeklyTotals } from '@/components/WeeklyTotals';
-
-import { TrainingTypeDistribution } from '@/components/TrainingTypeDistribution';
 import { Workload8Chart } from '@/components/Workload8Chart';
 import { WeeklyTables } from '@/components/WeeklyTables';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import TrainingTypePieWeek from '@/components/TrainingTypePieWeek';
+import TrainingEffortPerDay from '@/components/TrainingEffortPerDay';
+import RhrWeekLine from '@/components/RhrWeekLine';
+import RhrHistoryWithTraining from '@/components/RhrHistoryWithTraining';
+import { HeightHistory, WeightHistory } from '@/components/BodyHistory';
 
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 type ViewMode = 'week' | '8weeks';
 
 export default function SwimmerDashboardPage() {
@@ -31,12 +30,8 @@ export default function SwimmerDashboardPage() {
       if (!session?.user) return;
       setUserId(session.user.id);
       setEmail(session.user.email || '');
-      const { data } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', session.user.id)
-        .maybeSingle();
-      setUsername(data?.username || '');
+      const prof = await supabase.from('profiles').select('username').eq('id', session.user.id).maybeSingle();
+      setUsername(prof.data?.username || '');
     })();
   }, []);
 
@@ -48,58 +43,48 @@ export default function SwimmerDashboardPage() {
             <h1 className="text-xl font-semibold">Zwemmer dashboard</h1>
             <p className="text-sm text-slate-600">Welkom {username || email}.</p>
           </div>
-
-          {/* Toggle buttons: Week / 8 weken */}
           <div className="flex items-center gap-2">
-            <button
-              className={`btn ${mode==='week' ? 'bg-slate-900 text-white' : ''}`}
-              onClick={() => setMode('week')}
-            >
-              Week
-            </button>
-            <button
-              className={`btn ${mode==='8weeks' ? 'bg-slate-900 text-white' : ''}`}
-              onClick={() => setMode('8weeks')}
-            >
-              Laatste 8 weken
-            </button>
+            <button className={`btn ${mode==='week'?'bg-slate-900 text-white':''}`} onClick={()=>setMode('week')}>Week</button>
+            <button className={`btn ${mode==='8weeks'?'bg-slate-900 text-white':''}`} onClick={()=>setMode('8weeks')}>Laatste 8 weken</button>
           </div>
         </div>
 
-        {/* Week selector only when in Week mode */}
-        {mode === 'week' && (
+        {mode==='week' && (
           <div className="mt-4">
             <label className="label">Week (datum in die week)</label>
-            <input
-              type="date"
-              className="w-full sm:w-auto"
-              value={dateISO}
-              onChange={(e)=>setDateISO(e.target.value)}
-            />
+            <input type="date" className="w-full sm:w-auto" value={dateISO} onChange={(e)=>setDateISO(e.target.value)} />
           </div>
         )}
       </div>
 
       {!userId ? (
         <div className="card">Laden…</div>
-      ) : mode === 'week' ? (
+      ) : mode==='week' ? (
         <>
-          {/* Weekly summary numbers */}
           <WeeklyTotals userId={userId} date={dateISO} />
 
-          {/* Weekly distribution (bars per day) */}
-          <TrainingTypeDistribution userId={userId} date={dateISO} />
+          <div className="grid gap-6 md:grid-cols-2">
+            <TrainingTypePieWeek userId={userId} date={dateISO} />
+            <TrainingEffortPerDay userId={userId} date={dateISO} />
+          </div>
 
-          {/* Editable weekly history table */}
+          <RhrWeekLine userId={userId} date={dateISO} />
+
+          {/* Your existing editable weekly tables (training/RHR/body) */}
           <WeeklyTables userId={userId} date={dateISO} canEdit={true} />
+
+          <RhrHistoryWithTraining userId={userId} endDateISO={dateISO} />
+
+          <HeightHistory userId={userId} />
+          <WeightHistory userId={userId} />
         </>
       ) : (
         <>
-          {/* 8-week workload grouped bars */}
           <Workload8Chart userId={userId} />
         </>
       )}
     </div>
   );
 }
+
 
