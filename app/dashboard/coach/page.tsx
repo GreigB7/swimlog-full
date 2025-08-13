@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-import { WeeklyTotals } from '@/WeeklyTotals'; // NOTE: WeeklyTotals is at repo root
+import { WeeklyTotals } from '@/components/WeeklyTotals';
 import { TrainingTypeDistribution } from '@/components/TrainingTypeDistribution';
 import { Workload8Chart } from '@/components/Workload8Chart';
 
