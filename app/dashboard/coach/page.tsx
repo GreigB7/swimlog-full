@@ -2,13 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { usePersistedState } from '@/components/hooks/usePersistedState';
-import { WeekControls } from '@/components/WeekControls';
 
-import { Workload8Chart } from '@/components/Workload8Chart';
 import { WeeklyTotals } from '@/components/WeeklyTotals';
 import { TrainingTypeDistribution } from '@/components/TrainingTypeDistribution';
-import { CoachWeekNotes } from '@/components/CoachWeekNotes';
+import { Workload8Chart } from '@/components/Workload8Chart';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,19 +13,16 @@ const supabase = createClient(
 );
 
 type Person = { id: string; username: string | null; email: string | null };
+type ViewMode = 'week' | '8weeks';
 
 export default function CoachDashboardPage() {
   const [isCoach, setIsCoach] = useState(false);
   const [swimmers, setSwimmers] = useState<Person[]>([]);
+  const [selected, setSelected] = useState<string>('');
+  const [dateISO, setDateISO] = useState<string>(new Date().toISOString().slice(0,10));
+  const [mode, setMode] = useState<ViewMode>('week');
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<string>('');
-
-  // Persist the last-picked swimmer
-  const [selected, setSelected] = usePersistedState<string>('coach:lastSwimmer', '');
-
-  // Persisted week controls
-  const [dateISO, setDateISO] = usePersistedState<string>('ui:coach:date', new Date().toISOString().slice(0, 10));
-  const [show8, setShow8] = usePersistedState<boolean>('ui:coach:show8', true);
 
   useEffect(() => {
     (async () => {
@@ -38,33 +32,23 @@ export default function CoachDashboardPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) { setLoading(false); return; }
 
-      // role check
       const me = await supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
       const coach = (me.data?.role || '').toLowerCase() === 'coach';
       setIsCoach(coach);
       if (!coach) { setLoading(false); return; }
 
-      // load swimmers
       const { data, error } = await supabase
         .from('profiles')
         .select('id, username, email')
-        .ilike('role', 'swimmer');
+        .eq('role', 'swimmer');
 
-      if (error) {
-        setMsg(error.message);
-        setLoading(false);
-        return;
-      }
+      if (error) { setMsg(error.message); setLoading(false); return; }
 
       const sorted = (data ?? []).sort((a, b) => (a.username || a.email || '').localeCompare(b.username || b.email || ''));
       setSwimmers(sorted);
-
-      // if no stored selection yet, default to first
-      if (!selected && sorted.length) setSelected(sorted[0].id);
-
+      setSelected(sorted[0]?.id || '');
       setLoading(false);
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loading) return <div className="card">Laden…</div>;
@@ -80,48 +64,52 @@ export default function CoachDashboardPage() {
   return (
     <div className="vstack gap-6">
       <div className="card">
-        <h1 className="text-xl font-semibold">Coach dashboard</h1>
-        <p className="text-sm text-slate-600">Kies een zwemmer en week om de gegevens te bekijken.</p>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="text-xl font-semibold">Coach dashboard</h1>
+            <p className="text-sm text-slate-600">Kies een zwemmer en bekijk de gegevens.</p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button className={`btn ${mode==='week' ? 'bg-slate-900 text-white' : ''}`} onClick={()=>setMode('week')}>Week</button>
+            <button className={`btn ${mode==='8weeks' ? 'bg-slate-900 text-white' : ''}`} onClick={()=>setMode('8weeks')}>Laatste 8 weken</button>
+          </div>
+        </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div>
             <label className="label">Zwemmer</label>
-            <select
-              className="w-full"
-              value={selected}
-              onChange={(e) => setSelected(e.target.value)}
-            >
+            <select className="w-full" value={selected} onChange={(e)=>setSelected(e.target.value)}>
               {swimmers.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.username || s.email || s.id}
-                </option>
+                <option key={s.id} value={s.id}>{s.username || s.email || s.id}</option>
               ))}
             </select>
           </div>
 
-          {/* Week + 8-weeks toggle (persisted) */}
-          <WeekControls
-            scope="coach"
-            onChange={(d, s8) => { setDateISO(d); setShow8(s8); }}
-          />
+          {mode === 'week' && (
+            <div>
+              <label className="label">Week (datum in die week)</label>
+              <input type="date" className="w-full sm:w-auto" value={dateISO} onChange={(e)=>setDateISO(e.target.value)} />
+            </div>
+          )}
         </div>
 
         {msg && <div className="mt-2 text-sm text-rose-600">{msg}</div>}
       </div>
 
-      {/* Weekly, for chosen swimmer + date */}
-      {selected ? (
+      {!selected ? (
+        <div className="card">Geen zwemmer geselecteerd.</div>
+      ) : mode === 'week' ? (
         <>
           <WeeklyTotals userId={selected} date={dateISO} />
           <TrainingTypeDistribution userId={selected} date={dateISO} />
-          <CoachWeekNotes swimmerId={selected} date={dateISO} />
-
-          {/* 8-week overview */}
-          {show8 && <Workload8Chart userId={selected} />}
         </>
       ) : (
-        <div className="card">Geen zwemmer geselecteerd.</div>
+        <>
+          <Workload8Chart userId={selected} />
+        </>
       )}
     </div>
   );
 }
+
