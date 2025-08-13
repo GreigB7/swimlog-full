@@ -6,6 +6,7 @@
 ## Environment
 Create `.env.local` locally and set same vars in Vercel:
 ```
+
 NEXT_PUBLIC_SUPABASE_URL=YOUR_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
 ```
