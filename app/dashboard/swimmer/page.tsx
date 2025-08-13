@@ -2,28 +2,25 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { WeekControls } from '@/components/WeekControls';
-import { usePersistedState } from '@/components/hooks/usePersistedState';
 
-import { Workload8Chart } from '@/components/Workload8Chart';
 import { WeeklyTotals } from '@/components/WeeklyTotals';
 import { TrainingTypeDistribution } from '@/components/TrainingTypeDistribution';
-import { SwimmerWeekNotes } from '@/components/SwimmerWeekNotes';
-import { WeeklyTables } from '@/components/WeeklyTables'; // editable history
+import { Workload8Chart } from '@/components/Workload8Chart';
+import { WeeklyTables } from '@/components/WeeklyTables';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-export default function SwimmerDashboardPage() {
-  const [userId, setUserId] = useState<string>('');
-  const [username, setUsername] = useState<string>('');
-  const [email, setEmail] = useState<string>('');
+type ViewMode = 'week' | '8weeks';
 
-  // Persisted week controls
-  const [dateISO, setDateISO] = usePersistedState<string>('ui:swimmer:date', new Date().toISOString().slice(0, 10));
-  const [show8, setShow8] = usePersistedState<boolean>('ui:swimmer:show8', true);
+export default function SwimmerDashboardPage() {
+  const [userId, setUserId] = useState('');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [dateISO, setDateISO] = useState<string>(new Date().toISOString().slice(0,10));
+  const [mode, setMode] = useState<ViewMode>('week');
 
   useEffect(() => {
     (async () => {
@@ -31,13 +28,7 @@ export default function SwimmerDashboardPage() {
       if (!session?.user) return;
       setUserId(session.user.id);
       setEmail(session.user.email || '');
-
-      const { data } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', session.user.id)
-        .maybeSingle();
-
+      const { data } = await supabase.from('profiles').select('username').eq('id', session.user.id).maybeSingle();
       setUsername(data?.username || '');
     })();
   }, []);
@@ -50,35 +41,36 @@ export default function SwimmerDashboardPage() {
             <h1 className="text-xl font-semibold">Zwemmer dashboard</h1>
             <p className="text-sm text-slate-600">Welkom {username || email}.</p>
           </div>
+          <div className="flex items-center gap-2">
+            <button className={`btn ${mode==='week' ? 'bg-slate-900 text-white' : ''}`} onClick={()=>setMode('week')}>Week</button>
+            <button className={`btn ${mode==='8weeks' ? 'bg-slate-900 text-white' : ''}`} onClick={()=>setMode('8weeks')}>Laatste 8 weken</button>
+          </div>
         </div>
 
-        {/* Week + 8-weeks toggle (persisted) */}
-        <div className="mt-4">
-          <WeekControls
-            scope="swimmer"
-            onChange={(d, s8) => { setDateISO(d); setShow8(s8); }}
-          />
-        </div>
+        {/* Week selector */}
+        {mode === 'week' && (
+          <div className="mt-4">
+            <label className="label">Week (datum in die week)</label>
+            <input type="date" className="w-full sm:w-auto" value={dateISO} onChange={(e)=>setDateISO(e.target.value)} />
+          </div>
+        )}
       </div>
 
-      {/* Weekly blocks */}
-      {userId ? (
+      {!userId ? (
+        <div className="card">Laden…</div>
+      ) : mode === 'week' ? (
         <>
           <WeeklyTotals userId={userId} date={dateISO} />
           <TrainingTypeDistribution userId={userId} date={dateISO} />
-          <SwimmerWeekNotes userId={userId} date={dateISO} />
 
-          {/* Editable weekly history (table) */}
+          {/* Editable weekly history */}
           <WeeklyTables userId={userId} date={dateISO} canEdit={true} />
-
-          {/* 8-week overview */}
-          {show8 && <Workload8Chart userId={userId} />}
         </>
       ) : (
-        <div className="card">Laden…</div>
+        <>
+          <Workload8Chart userId={userId} />
+        </>
       )}
     </div>
   );
 }
-
-
