@@ -1,167 +1,133 @@
-'use client'
-import { useEffect, useMemo, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  ComposedChart, Bar, Legend
-} from "recharts";
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+} from 'recharts';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-type RhrRow = { entry_date: string; resting_heart_rate: number | null };
-type TrainRow = { training_date: string; effort_color: string | null; duration_minutes: number | null };
-type BodyRow = { entry_date: string; height_cm: number | null; weight_kg: number | null };
+type Props = { userId: string };
 
-const COLORS = {
-  green: '#22c55e',
-  white: '#e5e7eb',
-  whiteStroke: '#9ca3af',
-  red:   '#ef4444',
-};
+type RhrRow = { entry_date: string; rhr_bpm?: number | null; rhr?: number | null; heart_rate?: number | null };
+type BodyRow = { entry_date: string; height_cm?: number | null; weight_kg?: number | null };
 
-export function AllTimeTrends({ userId }: { userId: string }) {
-  const [rhr, setRhr] = useState<RhrRow[]>([]);
-  const [train, setTrain] = useState<TrainRow[]>([]);
-  const [body, setBody] = useState<BodyRow[]>([]);
+function coalesceRhr(row: RhrRow): number | null {
+  if (row.rhr_bpm != null) return Number(row.rhr_bpm);
+  if (row.rhr != null) return Number(row.rhr);
+  if (row.heart_rate != null) return Number(row.heart_rate);
+  return null;
+}
+
+export function AllTimeTrends({ userId }: Props) {
+  const [rhr, setRhr] = useState<{ x: string; y: number }[]>([]);
+  const [height, setHeight] = useState<{ x: string; y: number }[]>([]);
+  const [weight, setWeight] = useState<{ x: string; y: number }[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (!userId) return;
+
     (async () => {
-      if (!userId) return;
+      setLoading(true);
 
-      const r = await supabase.from('resting_hr_log')
-        .select('entry_date, resting_heart_rate')
+      // --- Resting HR ---
+      const rhrRes = await supabase
+        .from('resting_hr')
+        .select('entry_date,rhr_bpm,rhr,heart_rate')
         .eq('user_id', userId)
         .order('entry_date', { ascending: true });
-      setRhr(r.data ?? []);
 
-      const t = await supabase.from('training_log')
-        .select('training_date, effort_color, duration_minutes')
-        .eq('user_id', userId)
-        .order('training_date', { ascending: true });
-      setTrain(t.data ?? []);
+      const rhrData =
+        (rhrRes.data || [])
+          .map((row: RhrRow) => ({ x: row.entry_date, y: coalesceRhr(row) }))
+          .filter(d => d.y != null) as { x: string; y: number }[];
 
-      const b = await supabase.from('body_metrics_log')
-        .select('entry_date, height_cm, weight_kg')
+      setRhr(rhrData);
+
+      // --- Body metrics (height & weight) ---
+      const bodyRes = await supabase
+        .from('body_metrics')
+        .select('entry_date,height_cm,weight_kg')
         .eq('user_id', userId)
         .order('entry_date', { ascending: true });
-      setBody(b.data ?? []);
+
+      const body = (bodyRes.data || []) as BodyRow[];
+
+      setHeight(body.filter(b => b.height_cm != null).map(b => ({ x: b.entry_date, y: Number(b.height_cm) })));
+      setWeight(body.filter(b => b.weight_kg != null).map(b => ({ x: b.entry_date, y: Number(b.weight_kg) })));
+
+      setLoading(false);
     })();
   }, [userId]);
 
-  // --- Compose daily series: training hours by effort + RHR (bpm) ---
-  const dailyCombined = useMemo(() => {
-    // aggregate training minutes -> hours by date
-    const agg: Record<string, { date: string; green_h: number; white_h: number; red_h: number; rhr: number | null }> = {};
-    const ensure = (d: string) => (agg[d] ??= { date: d, green_h: 0, white_h: 0, red_h: 0, rhr: null });
-
-    for (const tr of train) {
-      if (!tr.training_date || !tr.duration_minutes) continue;
-      const key = tr.training_date;
-      const row = ensure(key);
-      const hrs = (tr.duration_minutes || 0) / 60;
-      const e = (tr.effort_color || 'White').toLowerCase();
-      if (e === 'green') row.green_h += hrs;
-      else if (e === 'red') row.red_h += hrs;
-      else row.white_h += hrs;
-    }
-
-    for (const rr of rhr) {
-      if (!rr.entry_date) continue;
-      const row = ensure(rr.entry_date);
-      row.rhr = rr.resting_heart_rate ?? null;
-    }
-
-    // sort by date asc
-    return Object.values(agg).sort((a, b) => (a.date < b.date ? -1 : 1));
-  }, [train, rhr]);
-
-  // Height/weight time series (unchanged)
-  const heightData = useMemo(
-    () => body.filter(b => b.height_cm != null).map(x => ({ date: x.entry_date, height: x.height_cm })),
-    [body]
-  );
-  const weightData = useMemo(
-    () => body.filter(b => b.weight_kg != null).map(x => ({ date: x.entry_date, weight: x.weight_kg })),
-    [body]
-  );
-
   return (
     <div className="vstack gap-6">
-      {/* RHR + Training Effort (stacked hours) */}
+      {/* RHR history */}
       <div className="card">
-        <h3 className="font-semibold mb-2">Rusthartslag — historie (met trainingsuren per dag en inspanning)</h3>
-        {dailyCombined.length ? (
-          <div style={{ width:'100%', height:320 }}>
-            <ResponsiveContainer>
-              <ComposedChart data={dailyCombined}>
-                <XAxis dataKey="date" />
-                {/* Left Y: hours of training */}
-                <YAxis yAxisId="left" />
-                {/* Right Y: bpm */}
-                <YAxis yAxisId="right" orientation="right" />
-                <Tooltip
-                  formatter={(value: any, name: any) => {
-                    if (name.includes('uur')) return [`${Number(value).toFixed(2)} uur`, ''];
-                    if (name.includes('RHR')) return [`${value} bpm`, ''];
-                    return [value, ''];
-                  }}
-                  labelFormatter={(lbl) => `Datum: ${lbl}`}
-                />
-                <Legend
-                  payload={[
-                    { value: 'Groen (uur)', type: 'square', color: COLORS.green, id: 'lg-green' },
-                    { value: 'Wit (uur)',   type: 'square', color: COLORS.white, id: 'lg-white' },
-                    { value: 'Rood (uur)',  type: 'square', color: COLORS.red,   id: 'lg-red' },
-                    { value: 'RHR (bpm)',   type: 'line',   color: '#0ea5e9',   id: 'lg-rhr' },
-                  ]}
-                />
-                {/* Stacked bars (hours) */}
-                <Bar yAxisId="left" dataKey="green_h" name="Groen (uur)" stackId="h" fill={COLORS.green} />
-                <Bar yAxisId="left" dataKey="white_h" name="Wit (uur)"   stackId="h" fill={COLORS.white} stroke={COLORS.whiteStroke} />
-                <Bar yAxisId="left" dataKey="red_h"   name="Rood (uur)"  stackId="h" fill={COLORS.red} />
-                {/* RHR line (bpm) */}
-                <Line yAxisId="right" type="monotone" dataKey="rhr" name="RHR (bpm)" dot stroke="#0ea5e9" />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <div className="text-sm text-slate-600">Nog geen gegevens.</div>
-        )}
+        <h3 className="font-semibold mb-2">Rusthartslag — historie</h3>
+        <div className="h-[240px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={rhr}>
+              <XAxis dataKey="x" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="y" name="RHR (bpm)" dot />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        {(!loading && rhr.length === 0) && <p className="text-xs text-slate-500 mt-2">Geen RHR-gegevens gevonden.</p>}
       </div>
 
-      {/* Length — history */}
-      <div className="card">
-        <h3 className="font-semibold mb-2">Lengte — historie</h3>
-        {heightData.length ? (
-          <div style={{ width:'100%', height:260 }}>
-            <ResponsiveContainer>
-              <LineChart data={heightData}>
-                <XAxis dataKey="date" /><YAxis /><Tooltip />
-                <Line type="monotone" dataKey="height" dot />
+      {/* Height + Weight histories */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="card">
+          <h3 className="font-semibold mb-2">Lengte — historie</h3>
+          <div className="h-[220px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={height}>
+                <XAxis dataKey="x" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="y" name="Lengte (cm)" dot />
               </LineChart>
             </ResponsiveContainer>
           </div>
-        ) : <div className="text-sm text-slate-600">Nog geen lengtemetingen.</div>}
-      </div>
+          {(!loading && height.length === 0) && <p className="text-xs text-slate-500 mt-2">Geen lengtegegevens.</p>}
+        </div>
 
-      {/* Weight — history */}
-      <div className="card">
-        <h3 className="font-semibold mb-2">Gewicht — historie</h3>
-        {weightData.length ? (
-          <div style={{ width:'100%', height:260 }}>
-            <ResponsiveContainer>
-              <LineChart data={weightData}>
-                <XAxis dataKey="date" /><YAxis /><Tooltip />
-                <Line type="monotone" dataKey="weight" dot />
+        <div className="card">
+          <h3 className="font-semibold mb-2">Gewicht — historie</h3>
+          <div className="h-[220px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={weight}>
+                <XAxis dataKey="x" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="y" name="Gewicht (kg)" dot />
               </LineChart>
             </ResponsiveContainer>
           </div>
-        ) : <div className="text-sm text-slate-600">Nog geen gewichtmetingen.</div>}
+          {(!loading && weight.length === 0) && <p className="text-xs text-slate-500 mt-2">Geen gewichtgegevens.</p>}
+        </div>
       </div>
     </div>
   );
 }
+
+export default AllTimeTrends;
+
 
