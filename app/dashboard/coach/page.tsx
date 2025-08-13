@@ -44,13 +44,11 @@ export default function CoachPage() {
 
   // Build the range ExportCsv expects
   const { weekStart, weekEnd } = useMemo(() => {
-    if (mode === 'week') {
-      return getWeekBounds(date);
-    }
+    if (mode === 'week') return getWeekBounds(date);
     // last 8 weeks ending on selected date
     const end = new Date(date + 'T00:00:00');
     const start = new Date(end);
-    start.setDate(start.getDate() - (8 * 7 - 1)); // inclusive range of 56 days
+    start.setDate(start.getDate() - (8 * 7 - 1)); // inclusive 56-day window
     const fmt = (x: Date) => x.toISOString().slice(0, 10);
     return { weekStart: fmt(start), weekEnd: fmt(end) };
   }, [mode, date]);
@@ -70,11 +68,6 @@ export default function CoachPage() {
 
       <WeekControls mode={mode} setMode={setMode} date={date} setDate={setDate} />
 
-      {/* CSV export for selected range */}
-      <div className="flex items-center justify-end">
-        <ExportCsv userId={userId} weekStart={weekStart} weekEnd={weekEnd} />
-      </div>
-
       {mode === 'week' ? (
         <>
           <WeeklyTotals userId={userId} date={date} />
@@ -86,6 +79,11 @@ export default function CoachPage() {
       )}
 
       <AllTimeTrends userId={userId} />
+
+      {/* CSV export at the very bottom */}
+      <div className="flex items-center justify-end">
+        <ExportCsv userId={userId} weekStart={weekStart} weekEnd={weekEnd} />
+      </div>
     </div>
   );
 }
