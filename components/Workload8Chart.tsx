@@ -18,6 +18,16 @@ function label(weekStart: Date) {
   return `W${weekNo} '${String(y).slice(-2)}`;
 }
 
+// Categorize Dutch/English labels
+function categorize(type: string) {
+  const t = (type || '').toLowerCase();
+  const isSwim = /(zwem|swim)/.test(t);
+  const isLand = /(land|kracht|dry|droog|gym|core)/.test(t);
+  if (isSwim) return 'swim';
+  if (isLand) return 'land';
+  return 'other';
+}
+
 export function Workload8Chart({ userId }: { userId: string }) {
   const [rows, setRows] = useState<any[]>([]);
   useEffect(() => {
@@ -45,9 +55,9 @@ export function Workload8Chart({ userId }: { userId: string }) {
       if (!map.has(m)) map.set(m, { label: label(new Date(m)), Zwemmen: 0, Landtraining: 0, Overig: 0 });
       const obj = map.get(m)!;
 
-      const t = (r.session_type || '').toLowerCase();
-      if (t.includes('swim')) obj.Zwemmen += dur;
-      else if (t.includes('land')) obj.Landtraining += dur;
+      const cat = categorize(r.session_type || '');
+      if (cat === 'swim') obj.Zwemmen += dur;
+      else if (cat === 'land') obj.Landtraining += dur;
       else obj.Overig += dur;
     }
     return Array.from(map.entries()).sort((a,b)=>a[0]-b[0]).map(([,v])=>v);
@@ -63,7 +73,7 @@ export function Workload8Chart({ userId }: { userId: string }) {
             <YAxis />
             <Tooltip />
             <Legend />
-            <Bar dataKey="Zwemmen"     name="Zwemmen"     fill="#10b981" />
+            <Bar dataKey="Zwemmen"     name="Zwemmen"      fill="#10b981" />
             <Bar dataKey="Landtraining" name="Landtraining" fill="#8b5cf6" />
             <Bar dataKey="Overig"       name="Overig"       fill="#f59e0b" />
           </BarChart>
