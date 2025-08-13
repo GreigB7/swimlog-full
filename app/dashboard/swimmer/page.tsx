@@ -1,85 +1,78 @@
 'use client'
-import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
-import { TrainingForm } from "@/components/TrainingForm";
-import { RhrForm } from "@/components/RhrForm";
-import { BodyForm } from "@/components/BodyForm";
-import { WeekControls } from "@/components/WeekControls";
-import { WeeklyTables } from "@/components/WeeklyTables";
-import { EightWeekChart } from "@/components/EightWeekChart";
-import { WeeklyCharts } from "@/components/WeeklyCharts";
-import { AllTimeTrends } from "@/components/AllTimeTrends";
-import { WeeklyTotals } from "@/components/WeeklyTotals";
+
+import { useEffect, useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
+import { WeekControls } from '@/components/WeekControls';
+import { usePersistedState } from '@/components/hooks/usePersistedState';
+
+import { Workload8Chart } from '@/components/Workload8Chart';
+import { WeeklyTotals } from '@/components/WeeklyTotals';
+import { TrainingTypeDistribution } from '@/components/TrainingTypeDistribution';
+import { SwimmerWeekNotes } from '@/components/SwimmerWeekNotes';
+import { WeeklyTables } from '@/components/WeeklyTables'; // editable history
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-type ProfileRow = { username: string | null; email: string | null; role?: string | null };
-
-export default function SwimmerPage() {
+export default function SwimmerDashboardPage() {
   const [userId, setUserId] = useState<string>('');
-  const [mode, setMode] = useState<'week'|'8weeks'>('week');
-  const [date, setDate] = useState<string>(() => new Date().toISOString().slice(0,10));
-
   const [username, setUsername] = useState<string>('');
   const [email, setEmail] = useState<string>('');
+
+  // Persisted week controls
+  const [dateISO, setDateISO] = usePersistedState<string>('ui:swimmer:date', new Date().toISOString().slice(0, 10));
+  const [show8, setShow8] = usePersistedState<boolean>('ui:swimmer:show8', true);
 
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUserId(session.user.id);
-        setEmail(session.user.email || '');
+      if (!session?.user) return;
+      setUserId(session.user.id);
+      setEmail(session.user.email || '');
 
-        const { data } = await supabase
-          .from('profiles')
-          .select('username,email')
-          .eq('id', session.user.id)
-          .maybeSingle();
-
-        if (data?.username) setUsername(String(data.username));
-        if (data?.email) setEmail(String(data.email)); // prefer profiles.email if present
-      }
+      const { data } = await supabase.from('profiles').select('username').eq('id', session.user.id).maybeSingle();
+      setUsername(data?.username || '');
     })();
   }, []);
 
   return (
     <div className="vstack gap-6">
-      {/* Header */}
       <div className="card">
-        <h1 className="text-xl font-semibold">Dashboard zwemmer</h1>
-        <p className="text-sm text-slate-600">
-          Log eerst je gegevens hieronder. Bekijk daarna je grafieken en rapporten.
-        </p>
-        <div className="mt-3 text-sm">
-          Ingelogd als <strong>{username || email || '—'}</strong>
-          {username && email ? <> <span className="text-slate-500">({email})</span></> : null}
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="text-xl font-semibold">Zwemmer dashboard</h1>
+            <p className="text-sm text-slate-600">Welkom {username || email}.</p>
+          </div>
+        </div>
+
+        {/* Week + 8-weeks toggle (persisted) */}
+        <div className="mt-4">
+          <WeekControls
+            scope="swimmer"
+            onChange={(d, s8) => { setDateISO(d); setShow8(s8); }}
+          />
         </div>
       </div>
 
-      {/* --- NEW ORDER: logging forms at the top --- */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <TrainingForm />
-        <RhrForm />
-        <BodyForm />
-      </div>
-
-      {/* Controls for charts/reports below */}
-      <WeekControls mode={mode} setMode={setMode} date={date} setDate={setDate} />
-
-      {mode === 'week' ? (
+      {/* Weekly blocks */}
+      {userId ? (
         <>
-          <WeeklyTotals userId={userId} date={date} />
-          <WeeklyCharts userId={userId} date={date} />
-          <WeeklyTables userId={userId} canEdit={true} date={date} />
+          <WeeklyTotals userId={userId} date={dateISO} />
+          <TrainingTypeDistribution userId={userId} date={dateISO} />
+          <SwimmerWeekNotes userId={userId} date={dateISO} />
+
+          {/* Editable weekly history (table) */}
+          <WeeklyTables userId={userId} date={dateISO} />
+
+          {/* 8-week overview */}
+          {show8 && <Workload8Chart userId={userId} />}
         </>
       ) : (
-        <EightWeekChart userId={userId} />
+        <div className="card">Laden…</div>
       )}
-
-      <AllTimeTrends userId={userId} />
     </div>
   );
 }
+
