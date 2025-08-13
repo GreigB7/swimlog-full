@@ -32,7 +32,12 @@ export default function SwimmerDashboardPage() {
       setUserId(session.user.id);
       setEmail(session.user.email || '');
 
-      const { data } = await supabase.from('profiles').select('username').eq('id', session.user.id).maybeSingle();
+      const { data } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
       setUsername(data?.username || '');
     })();
   }, []);
@@ -64,7 +69,7 @@ export default function SwimmerDashboardPage() {
           <SwimmerWeekNotes userId={userId} date={dateISO} />
 
           {/* Editable weekly history (table) */}
-          <WeeklyTables userId={userId} date={dateISO} />
+          <WeeklyTables userId={userId} date={dateISO} canEdit={true} />
 
           {/* 8-week overview */}
           {show8 && <Workload8Chart userId={userId} />}
@@ -75,4 +80,5 @@ export default function SwimmerDashboardPage() {
     </div>
   );
 }
+
 
