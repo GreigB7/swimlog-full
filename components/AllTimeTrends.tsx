@@ -191,4 +191,3 @@ export function AllTimeTrends({ userId }: Props) {
 export default AllTimeTrends;
 
 
-
