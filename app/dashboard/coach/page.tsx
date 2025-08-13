@@ -7,6 +7,8 @@ import { EightWeekChart } from "@/components/EightWeekChart";
 import { WeeklyCharts } from "@/components/WeeklyCharts";
 import { AllTimeTrends } from "@/components/AllTimeTrends";
 import { WeeklyTotals } from "@/components/WeeklyTotals";
+import { ExportCsv } from '@/components/ExportCsv';
+
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
@@ -41,7 +43,11 @@ export default function CoachPage() {
       </div>
 
       <WeekControls mode={mode} setMode={setMode} date={date} setDate={setDate} />
-
+      
+<div className="flex items-center justify-end">
+  <ExportCsv userId={userId} mode={mode} date={date} />
+</div>
+      
       {mode === 'week' ? (
         <>
           <WeeklyTotals userId={userId} date={date} />
