@@ -77,7 +77,7 @@ export default function SwimmerPage() {
 
         <div className="mt-3 text-sm">
           Ingelogd als <strong>{username || email || '—'}</strong>
-          {username && email ? <> <span className="text-slate-500">({email})</span></> : null}
+          //{username && email ? <> <span className="text-slate-500">({email})</span></> : null}
         </div>
       </div>
 
