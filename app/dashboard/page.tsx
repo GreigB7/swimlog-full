@@ -18,9 +18,7 @@ const supabase = createClient(
 );
 
 type ViewMode = 'week' | '8weeks';
-type ProfileRow = { username: string | null; email: string | null; role?: string | null };
 
-// same helper as coach page
 function getWeekBounds(dateISO: string) {
   const d = new Date(dateISO + 'T00:00:00');
   const dow = d.getDay() || 7; // Mon=1..Sun=7
@@ -56,7 +54,7 @@ export default function SwimmerPage() {
     })();
   }, []);
 
-  // range ExportCsv expects
+  // Date range for ExportCsv
   const { weekStart, weekEnd } = useMemo(() => {
     if (mode === 'week') return getWeekBounds(date);
     // last 8 weeks ending on selected date
@@ -77,14 +75,13 @@ export default function SwimmerPage() {
           Log eerst je gegevens hieronder. Bekijk daarna je grafieken en rapporten.
         </p>
 
-        {/* Who is logged in */}
         <div className="mt-3 text-sm">
           Ingelogd als <strong>{username || email || '—'}</strong>
           {username && email ? <> <span className="text-slate-500">({email})</span></> : null}
         </div>
       </div>
 
-      {/* Forms at the top */}
+      {/* Forms at the top (only once) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <TrainingForm />
         <RhrForm />
@@ -106,15 +103,8 @@ export default function SwimmerPage() {
 
       <AllTimeTrends userId={userId} />
 
-      {/* (Your page currently repeats forms at the bottom; keeping as-is to match your baseline) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <TrainingForm />
-        <RhrForm />
-        <BodyForm />
-      </div>
-
       {/* CSV export at the very bottom */}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-end pb-4">
         <ExportCsv userId={userId} weekStart={weekStart} weekEnd={weekEnd} />
       </div>
     </div>
