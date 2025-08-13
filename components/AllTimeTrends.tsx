@@ -43,7 +43,7 @@ function normEffort(e: string | null | undefined): 'green' | 'white' | 'red' {
 export function AllTimeTrends({ userId }: Props) {
   const [rhr, setRhr] = useState<RhrRow[]>([]);
   const [train, setTrain] = useState<TrainRow[]>([]);
-  const [body, setBody] = useState[BodyRow[]>([] as any);
+  const [body, setBody] = useState<BodyRow[]>([] as any);
 
   useEffect(() => {
     if (!userId) return;
