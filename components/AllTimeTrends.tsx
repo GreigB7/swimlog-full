@@ -21,14 +21,9 @@ const supabase = createClient(
 
 type Props = { userId: string };
 
-// Flexible row types (support multiple column names)
-type RhrRow =
-  | { entry_date: string; rhr_bpm?: number | null; rhr?: number | null; resting_heart_rate?: number | null }
-  | { entry_date: string; [k: string]: any };
-
-type BodyRow = { entry_date: string; height_cm?: number | null; weight_kg?: number | null };
-
+type RhrRow = { entry_date: string; resting_heart_rate: number | null };
 type TrainRow = { training_date: string; effort_color: string | null; duration_minutes: number | null };
+type BodyRow = { entry_date: string; height_cm: number | null; weight_kg: number | null };
 
 const COLORS = {
   green: '#22c55e',
@@ -38,13 +33,6 @@ const COLORS = {
   rhr: '#0ea5e9',
 };
 
-function coalesceRhr(row: RhrRow): number | null {
-  if (row.rhr_bpm != null) return Number(row.rhr_bpm);
-  if (row.resting_heart_rate != null) return Number(row.resting_heart_rate);
-  if (row.rhr != null) return Number(row.rhr);
-  return null;
-}
-
 function normEffort(e: string | null | undefined): 'green' | 'white' | 'red' {
   const s = (e || '').toLowerCase();
   if (/(groen|green)/.test(s)) return 'green';
@@ -52,96 +40,47 @@ function normEffort(e: string | null | undefined): 'green' | 'white' | 'red' {
   return 'red';
 }
 
-export default function AllTimeTrends({ userId }: Props) {
-  const [rhrRows, setRhrRows] = useState<RhrRow[]>([]);
-  const [bodyRows, setBodyRows] = useState<BodyRow[]>([]);
-  const [trainRows, setTrainRows] = useState<TrainRow[]>([]);
-  const [loading, setLoading] = useState(false);
+export function AllTimeTrends({ userId }: Props) {
+  const [rhr, setRhr] = useState<RhrRow[]>([]);
+  const [train, setTrain] = useState<TrainRow[]>([]);
+  const [body, setBody] = useState<BodyRow[]>([]);
 
   useEffect(() => {
     if (!userId) return;
-
     (async () => {
-      setLoading(true);
-
-      // --- Resting HR: try 'resting_hr' then fallback to 'resting_hr_log'
-      let rhrRes = await supabase
-        .from('resting_hr')
-        .select('entry_date,rhr_bpm,rhr,resting_heart_rate')
+      const r = await supabase
+        .from('resting_hr_log')
+        .select('entry_date,resting_heart_rate')
         .eq('user_id', userId)
         .order('entry_date', { ascending: true });
+      setRhr(r.data ?? []);
 
-      if (rhrRes.error && rhrRes.status !== 406) {
-        // table may not exist; ignore and try alt
-        rhrRes = { data: null, error: null, status: 200, statusText: 'ok', count: null } as any;
-      }
-
-      if (!rhrRes.data || rhrRes.data.length === 0) {
-        const alt = await supabase
-          .from('resting_hr_log')
-          .select('entry_date,resting_heart_rate')
-          .eq('user_id', userId)
-          .order('entry_date', { ascending: true });
-        if (!alt.error && alt.data) setRhrRows(alt.data as RhrRow[]);
-        else setRhrRows([]);
-      } else {
-        setRhrRows(rhrRes.data as RhrRow[]);
-      }
-
-      // --- Body metrics: try 'body_metrics' then fallback to 'body_metrics_log'
-      let bodyRes = await supabase
-        .from('body_metrics')
-        .select('entry_date,height_cm,weight_kg')
-        .eq('user_id', userId)
-        .order('entry_date', { ascending: true });
-
-      if (bodyRes.error && bodyRes.status !== 406) {
-        bodyRes = { data: null, error: null, status: 200, statusText: 'ok', count: null } as any;
-      }
-
-      if (!bodyRes.data || bodyRes.data.length === 0) {
-        const alt = await supabase
-          .from('body_metrics_log')
-          .select('entry_date,height_cm,weight_kg')
-          .eq('user_id', userId)
-          .order('entry_date', { ascending: true });
-        if (!alt.error && alt.data) setBodyRows(alt.data as BodyRow[]);
-        else setBodyRows([]);
-      } else {
-        setBodyRows(bodyRes.data as BodyRow[]);
-      }
-
-      // --- Training (all-time)
-      const trainRes = await supabase
+      const t = await supabase
         .from('training_log')
         .select('training_date,effort_color,duration_minutes')
         .eq('user_id', userId)
         .order('training_date', { ascending: true });
+      setTrain(t.data ?? []);
 
-      setTrainRows(trainRes.data ?? []);
-      setLoading(false);
+      const b = await supabase
+        .from('body_metrics_log')
+        .select('entry_date,height_cm,weight_kg')
+        .eq('user_id', userId)
+        .order('entry_date', { ascending: true });
+      setBody(b.data ?? []);
     })();
   }, [userId]);
 
-  // RHR line series
   const rhrSeries = useMemo(
-    () =>
-      (rhrRows || [])
-        .map((row) => ({ date: row.entry_date, rhr: coalesceRhr(row) }))
-        .filter((d) => d.rhr != null) as { date: string; rhr: number }[],
-    [rhrRows]
+    () => rhr.map(x => ({ date: x.entry_date, rhr: x.resting_heart_rate ?? null })).filter(d => d.rhr != null) as { date: string; rhr: number }[],
+    [rhr]
   );
 
-  // Aggregate daily training hours by effort
   const dailyCombined = useMemo(() => {
-    const agg = new Map<string, { date: string; green_h: number; white_h: number; red_h: number; rhr: number | null }>();
+    const agg: Record<string, { date: string; green_h: number; white_h: number; red_h: number; rhr: number | null }> = {};
+    const ensure = (d: string) => (agg[d] ??= { date: d, green_h: 0, white_h: 0, red_h: 0, rhr: null });
 
-    const ensure = (date: string) => {
-      if (!agg.has(date)) agg.set(date, { date, green_h: 0, white_h: 0, red_h: 0, rhr: null });
-      return agg.get(date)!;
-    };
-
-    for (const tr of trainRows) {
+    for (const tr of train) {
       if (!tr.training_date || !tr.duration_minutes) continue;
       const row = ensure(tr.training_date);
       const hrs = (tr.duration_minutes || 0) / 60;
@@ -151,33 +90,26 @@ export default function AllTimeTrends({ userId }: Props) {
       else row.white_h += hrs;
     }
 
-    for (const rr of rhrRows) {
-      const d = rr.entry_date;
-      const val = coalesceRhr(rr);
-      if (d && val != null) ensure(d).rhr = val;
+    for (const rr of rhrSeries) {
+      const row = ensure(rr.date);
+      row.rhr = rr.rhr;
     }
 
-    return Array.from(agg.values()).sort((a, b) => (a.date < b.date ? -1 : 1));
-  }, [trainRows, rhrRows]);
+    return Object.values(agg).sort((a, b) => (a.date < b.date ? -1 : 1));
+  }, [train, rhrSeries]);
 
   const heightSeries = useMemo(
-    () =>
-      (bodyRows || [])
-        .filter((b) => b.height_cm != null)
-        .map((b) => ({ date: b.entry_date, height: Number(b.height_cm) })),
-    [bodyRows]
+    () => body.filter(b => b.height_cm != null).map(x => ({ date: x.entry_date, height: Number(x.height_cm) })),
+    [body]
   );
   const weightSeries = useMemo(
-    () =>
-      (bodyRows || [])
-        .filter((b) => b.weight_kg != null)
-        .map((b) => ({ date: b.entry_date, weight: Number(b.weight_kg) })),
-    [bodyRows]
+    () => body.filter(b => b.weight_kg != null).map(x => ({ date: x.entry_date, weight: Number(x.weight_kg) })),
+    [body]
   );
 
   return (
     <div className="vstack gap-6">
-      {/* RHR + training hours (stacked) */}
+      {/* RHR + Training Effort (stacked hours) */}
       <div className="card">
         <h3 className="font-semibold mb-2">Rusthartslag — historie (met trainingsuren per dag en inspanning)</h3>
         {dailyCombined.length ? (
@@ -185,9 +117,7 @@ export default function AllTimeTrends({ userId }: Props) {
             <ResponsiveContainer>
               <ComposedChart data={dailyCombined}>
                 <XAxis dataKey="date" />
-                {/* Left Y: training hours */}
                 <YAxis yAxisId="left" />
-                {/* Right Y: bpm */}
                 <YAxis yAxisId="right" orientation="right" />
                 <Tooltip
                   formatter={(value: any, name: any) => {
@@ -206,25 +136,18 @@ export default function AllTimeTrends({ userId }: Props) {
                   ]}
                 />
                 <Bar yAxisId="left" dataKey="green_h" name="Groen (uur)" stackId="h" fill={COLORS.green} />
-                <Bar
-                  yAxisId="left"
-                  dataKey="white_h"
-                  name="Wit (uur)"
-                  stackId="h"
-                  fill={COLORS.white}
-                  stroke={COLORS.whiteStroke}
-                />
+                <Bar yAxisId="left" dataKey="white_h" name="Wit (uur)" stackId="h" fill={COLORS.white} stroke={COLORS.whiteStroke} />
                 <Bar yAxisId="left" dataKey="red_h" name="Rood (uur)" stackId="h" fill={COLORS.red} />
                 <Line yAxisId="right" type="monotone" dataKey="rhr" name="RHR (bpm)" dot stroke={COLORS.rhr} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
         ) : (
-          <p className="text-sm text-slate-600">Nog geen gegevens.</p>
+          <div className="text-sm text-slate-600">Nog geen gegevens.</div>
         )}
       </div>
 
-      {/* Lengte — historie */}
+      {/* Length — history */}
       <div className="card">
         <h3 className="font-semibold mb-2">Lengte — historie</h3>
         {heightSeries.length ? (
@@ -239,11 +162,11 @@ export default function AllTimeTrends({ userId }: Props) {
             </ResponsiveContainer>
           </div>
         ) : (
-          <p className="text-sm text-slate-600">Nog geen lengtemetingen.</p>
+          <div className="text-sm text-slate-600">Nog geen lengtemetingen.</div>
         )}
       </div>
 
-      {/* Gewicht — historie */}
+      {/* Weight — history */}
       <div className="card">
         <h3 className="font-semibold mb-2">Gewicht — historie</h3>
         {weightSeries.length ? (
@@ -258,11 +181,14 @@ export default function AllTimeTrends({ userId }: Props) {
             </ResponsiveContainer>
           </div>
         ) : (
-          <p className="text-sm text-slate-600">Nog geen gewichtmetingen.</p>
+          <div className="text-sm text-slate-600">Nog geen gewichtmetingen.</div>
         )}
       </div>
     </div>
   );
 }
+
+export default AllTimeTrends;
+
 
 
