@@ -1,50 +1,41 @@
 'use client'
-import React from 'react';
+import { useEffect } from 'react';
+import { usePersistedState } from '@/components/hooks/usePersistedState';
 
-type Props = {
-  mode: 'week' | '8weeks';
-  setMode: (m: 'week' | '8weeks') => void;
-  date: string;                // ISO yyyy-mm-dd (valt binnen de gewenste week)
-  setDate: (d: string) => void;
-};
+function todayISO() {
+  const d = new Date();
+  return d.toISOString().slice(0, 10);
+}
 
-export function WeekControls({ mode, setMode, date, setDate }: Props) {
+export function WeekControls({
+  scope,                // e.g. 'swimmer' or 'coach'
+  onChange,             // (dateISO, show8) => void
+  className = '',
+}: {
+  scope: 'swimmer' | 'coach';
+  onChange: (dateISO: string, show8: boolean) => void;
+  className?: string;
+}) {
+  const [date, setDate]   = usePersistedState<string>(`ui:${scope}:date`, todayISO());
+  const [show8, setShow8] = usePersistedState<boolean>(`ui:${scope}:show8`, true);
+
+  useEffect(() => { onChange(date, show8); }, [date, show8, onChange]);
+
   return (
-    <div className="card">
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div>
-          <div className="text-sm text-slate-600 mb-1">Weergave</div>
-          <div className="inline-flex rounded-lg border overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setMode('week')}
-              className={`px-3 py-2 text-sm ${mode === 'week' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700'}`}
-              aria-pressed={mode === 'week'}
-            >
-              Week
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('8weeks')}
-              className={`px-3 py-2 text-sm border-l ${mode === '8weeks' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700'}`}
-              aria-pressed={mode === '8weeks'}
-            >
-              Laatste 8 weken
-            </button>
-          </div>
-        </div>
-
-        {mode === 'week' && (
-          <div>
-            <label className="label">Referentiedatum (valt binnen de week)</label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-          </div>
-        )}
+    <div className={`card flex flex-col sm:flex-row items-start sm:items-end gap-3 ${className}`}>
+      <div>
+        <label className="label">Week (datum in die week)</label>
+        <input type="date" className="w-full" value={date} onChange={(e)=>setDate(e.target.value)} />
       </div>
+      <label className="inline-flex items-center gap-2 select-none">
+        <input
+          type="checkbox"
+          checked={show8}
+          onChange={(e)=>setShow8(e.target.checked)}
+        />
+        <span>Toon 8 weken overzicht</span>
+      </label>
     </div>
   );
 }
+
