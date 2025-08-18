@@ -82,7 +82,7 @@ export function AppHeader() {
                 Ingelogd als <strong>{username || email}</strong>
               </span>
               <button onClick={signOut} className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm">
-                Afmelden
+                Uitloggen
               </button>
             </div>
           ) : (
