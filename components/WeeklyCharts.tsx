@@ -17,7 +17,7 @@ const supabase = createClient(
 type Props = { userId: string; date: string };
 
 type TrainRow = {
-  training_date: string;            // YYYY-MM-DD
+  training_date: string;            // YYYY-MM-DD (DATE column)
   session_type: string | null;      // Morning Swim | Afternoon Swim | Land Training | Other Activity
   duration_minutes: number | null;  // minutes
   effort_color: string | null;      // Green | White | Red (or dutch variants)
@@ -27,17 +27,29 @@ type RhrRow = { entry_date: string; resting_heart_rate: number | null };
 
 const DAY_LABELS = ['Ma','Di','Wo','Do','Vr','Za','Zo']; // Monday → Sunday
 
-// Week bounds: Monday 00:00:00 to Sunday 23:59:59 (ISO date strings)
+// ---- SAFE local date helpers (no UTC conversion) ----
+const pad = (n: number) => String(n).padStart(2, '0');
+const ymd = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+/** Parse "YYYY-MM-DD" as a local date and pin to midday to avoid DST edges */
+function fromISO(iso: string) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const dt = new Date(y, (m ?? 1) - 1, d ?? 1);
+  dt.setHours(12, 0, 0, 0);
+  return dt;
+}
+
+// Week bounds: Monday -> Sunday (both returned as YYYY-MM-DD without UTC drift)
 function weekBounds(dateISO: string) {
-  const d = new Date(dateISO + 'T00:00:00');
+  const d = fromISO(dateISO);
   const js = d.getDay(); // Sun=0, Mon=1, ... Sat=6
   const offsetToMon = (js === 0 ? -6 : 1 - js);
   const start = new Date(d);
   start.setDate(d.getDate() + offsetToMon);
+  start.setHours(12, 0, 0, 0);
   const end = new Date(start);
   end.setDate(start.getDate() + 6);
-  const fmt = (x: Date) => x.toISOString().slice(0,10);
-  return { start: fmt(start), end: fmt(end) };
+  end.setHours(12, 0, 0, 0);
+  return { start: ymd(start), end: ymd(end) };
 }
 
 // Normalise effort strings (supports dutch/english)
@@ -106,12 +118,12 @@ export function WeeklyCharts({ userId, date }: Props) {
 
   // Stacked minutes per day by effort (green/white/red) — Monday→Sunday
   const byDay = useMemo(() => {
-    // build skeleton for the week
-    const startDate = new Date(start + 'T00:00:00');
+    const startDate = fromISO(start);
+    // skeleton Mon..Sun
     const days = Array.from({ length: 7 }).map((_, i) => {
       const d = new Date(startDate);
       d.setDate(startDate.getDate() + i);
-      const iso = d.toISOString().slice(0,10);
+      const iso = ymd(d); // IMPORTANT: no toISOString()
       return { dateISO: iso, day: DAY_LABELS[i], green: 0, white: 0, red: 0 };
     });
     const idx: Record<string, number> = {};
@@ -119,7 +131,7 @@ export function WeeklyCharts({ userId, date }: Props) {
 
     for (const r of train) {
       if (!r.training_date || !r.duration_minutes) continue;
-      const i = idx[r.training_date];
+      const i = idx[r.training_date]; // exact string match with DATE column
       if (i == null) continue;
       const k = normEffort(r.effort_color);
       days[i][k] += r.duration_minutes;
