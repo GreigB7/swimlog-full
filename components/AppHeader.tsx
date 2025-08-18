@@ -126,7 +126,7 @@ export function AppHeader() {
                 onClick={signOut}
                 className="mx-3 mb-2 w-[calc(100%-1.5rem)] px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm"
               >
-                Afmelden
+                Uitloggen
               </button>
             ) : (
               <Link
