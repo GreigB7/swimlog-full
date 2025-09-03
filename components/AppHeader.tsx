@@ -41,8 +41,7 @@ export function AppHeader() {
   // Typed routes so <Link> is happy with typedRoutes enabled
   const links: { href: Route; label: string; show: boolean }[] = [
     { href: '/' as Route,                       label: 'Start',         show: true },
-    // shared goals page
-    { href: '/dashboard/goals' as Route,        label: 'Doelen',        show: role !== '' },
+   
 
     // swimmer
     { href: '/dashboard/swimmer' as Route,      label: 'Zwemmer',       show: role === 'swimmer' },
@@ -51,6 +50,9 @@ export function AppHeader() {
     // coach
     { href: '/dashboard/coach' as Route,        label: 'Coach',         show: role === 'coach' },
     { href: '/dashboard/coach/plan' as Route,   label: 'Plan bewerken', show: role === 'coach' },
+
+     // shared goals page
+    { href: '/dashboard/goals' as Route,        label: 'Doelen',        show: role !== '' },
   ];
 
   function isActive(href: Route) {
