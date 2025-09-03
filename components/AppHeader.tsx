@@ -1,4 +1,4 @@
-'use client'
+'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -40,14 +40,17 @@ export function AppHeader() {
 
   // Typed routes so <Link> is happy with typedRoutes enabled
   const links: { href: Route; label: string; show: boolean }[] = [
+    { href: '/' as Route,                       label: 'Start',         show: true },
+    // shared goals page
+    { href: '/dashboard/goals' as Route,        label: 'Doelen',        show: role !== '' },
+
     // swimmer
-    { href: '/' as Route,                       label: 'Start',        show: true },
-    { href: '/dashboard/swimmer' as Route,      label: 'Zwemmer',      show: role === 'swimmer' },
-    { href: '/dashboard/swimmer/plan' as Route, label: 'Techniekplan', show: role === 'swimmer' },
+    { href: '/dashboard/swimmer' as Route,      label: 'Zwemmer',       show: role === 'swimmer' },
+    { href: '/dashboard/swimmer/plan' as Route, label: 'Techniekplan',  show: role === 'swimmer' },
 
     // coach
-    { href: '/dashboard/coach' as Route,        label: 'Coach',        show: role === 'coach' },
-    { href: '/dashboard/coach/plan' as Route,   label: 'Plan bewerken',show: role === 'coach' },
+    { href: '/dashboard/coach' as Route,        label: 'Coach',         show: role === 'coach' },
+    { href: '/dashboard/coach/plan' as Route,   label: 'Plan bewerken', show: role === 'coach' },
   ];
 
   function isActive(href: Route) {
@@ -62,7 +65,9 @@ export function AppHeader() {
   return (
     <header className="bg-slate-900 text-white sticky top-0 z-50">
       <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-        <Link href={'/' as Route} className="font-semibold tracking-tight">Zwem Logboek</Link>
+        <Link href={'/' as Route} className="font-semibold tracking-tight">
+          Zwem Logboek
+        </Link>
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-2">
@@ -81,12 +86,18 @@ export function AppHeader() {
               <span className="text-xs text-slate-300">
                 Ingelogd als <strong>{username || email}</strong>
               </span>
-              <button onClick={signOut} className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm">
+              <button
+                onClick={signOut}
+                className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm"
+              >
                 Uitloggen
               </button>
             </div>
           ) : (
-            <Link href={'/' as Route} className="ml-3 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm">
+            <Link
+              href={'/' as Route}
+              className="ml-3 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm"
+            >
               Inloggen
             </Link>
           )}
@@ -143,3 +154,4 @@ export function AppHeader() {
     </header>
   );
 }
+
