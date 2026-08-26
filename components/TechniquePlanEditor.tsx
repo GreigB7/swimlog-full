@@ -1,20 +1,17 @@
 'use client'
 import { useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseBrowserClient } from "@/lib/supabase";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = getSupabaseBrowserClient();
 
 type ItemStartVanaf = { omschrijving: string; vanaf?: string };
 type ItemGeconstateerd = { omschrijving: string; geconstateerd_bij?: string };
+type StrokeKey = 'vlinderslag'|'rugcrawl'|'schoolslag'|'borstcrawl';
 
 export type PlanData = {
   oef1: { omschrijving: string; doel: string; vanaf?: string };
   oef2: { omschrijving: string; doel: string; vanaf?: string };
 
-  // ⬇️ ALL strokes are arrays now
   vlinderslag: ItemStartVanaf[];
   rugcrawl:   ItemStartVanaf[];
   schoolslag: ItemStartVanaf[];
@@ -38,17 +35,49 @@ const emptyPlan: PlanData = {
 };
 
 // Backward-compatible: turn single objects into arrays
-function normStroke(x: any): ItemStartVanaf[] {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function textValue(value: unknown) {
+  return value == null ? '' : String(value);
+}
+
+function normExercise(value: unknown, fallback: PlanData['oef1']) {
+  if (!isRecord(value)) return { ...fallback };
+  return {
+    omschrijving: textValue(value.omschrijving),
+    doel: textValue(value.doel),
+    vanaf: textValue(value.vanaf),
+  };
+}
+
+function normStartVanaf(value: unknown): ItemStartVanaf {
+  if (!isRecord(value)) return { omschrijving: '', vanaf: '' };
+  return {
+    omschrijving: textValue(value.omschrijving),
+    vanaf: textValue(value.vanaf),
+  };
+}
+
+function normGeconstateerd(value: unknown): ItemGeconstateerd {
+  if (!isRecord(value)) return { omschrijving: '', geconstateerd_bij: '' };
+  return {
+    omschrijving: textValue(value.omschrijving),
+    geconstateerd_bij: textValue(value.geconstateerd_bij),
+  };
+}
+
+function normStroke(x: unknown): ItemStartVanaf[] {
   if (Array.isArray(x)) {
-    return x.map((it) => ({
-      omschrijving: (it?.omschrijving ?? '').toString(),
-      vanaf: it?.vanaf ? String(it.vanaf) : '',
-    }));
+    return x.map(normStartVanaf);
   }
-  if (x && typeof x === 'object') {
-    return [{ omschrijving: (x.omschrijving ?? '').toString(), vanaf: x.vanaf ? String(x.vanaf) : '' }];
-  }
-  return [{ omschrijving: '', vanaf: '' }];
+  return [normStartVanaf(x)];
+}
+
+function normRaceverdeling(value: unknown) {
+  if (!Array.isArray(value)) return emptyPlan.raceverdeling;
+  return value.map(normGeconstateerd);
 }
 
 export function TechniquePlanEditor({ swimmerId }: { swimmerId: string }) {
@@ -68,22 +97,20 @@ export function TechniquePlanEditor({ swimmerId }: { swimmerId: string }) {
 
       if (error) { setMsg(error.message); return; }
 
-      const d = (data?.data ?? {}) as Partial<PlanData>;
+      const d = isRecord(data?.data) ? data.data : {};
 
       // normalize strokes to arrays
       const normalized: PlanData = {
-        oef1: { ...(d.oef1 ?? emptyPlan.oef1) },
-        oef2: { ...(d.oef2 ?? emptyPlan.oef2) },
+        oef1: normExercise(d.oef1, emptyPlan.oef1),
+        oef2: normExercise(d.oef2, emptyPlan.oef2),
 
         vlinderslag: normStroke(d.vlinderslag),
         rugcrawl:    normStroke(d.rugcrawl),
         schoolslag:  normStroke(d.schoolslag),
         borstcrawl:  normStroke(d.borstcrawl),
 
-        starten_keren: { ...(d.starten_keren ?? emptyPlan.starten_keren) },
-        raceverdeling: Array.isArray(d.raceverdeling)
-          ? d.raceverdeling.map(it => ({ omschrijving: it?.omschrijving ?? '', geconstateerd_bij: it?.geconstateerd_bij ?? '' }))
-          : emptyPlan.raceverdeling,
+        starten_keren: normStartVanaf(d.starten_keren),
+        raceverdeling: normRaceverdeling(d.raceverdeling),
       };
 
       setPlan(normalized);
@@ -102,24 +129,25 @@ export function TechniquePlanEditor({ swimmerId }: { swimmerId: string }) {
   }
 
   const setField = <K extends keyof PlanData>(k: K, v: PlanData[K]) => setPlan(p => ({ ...p, [k]: v }));
+  const setStroke = (key: StrokeKey, rows: ItemStartVanaf[]) => setPlan(p => ({ ...p, [key]: rows }));
 
   // helpers for stroke arrays
-  function updateStroke(key: 'vlinderslag'|'rugcrawl'|'schoolslag'|'borstcrawl', idx: number, patch: Partial<ItemStartVanaf>) {
+  function updateStroke(key: StrokeKey, idx: number, patch: Partial<ItemStartVanaf>) {
     const arr = [...plan[key]];
     arr[idx] = { ...arr[idx], ...patch };
-    setField(key, arr as any);
+    setStroke(key, arr);
   }
-  function addRow(key: 'vlinderslag'|'rugcrawl'|'schoolslag'|'borstcrawl') {
-    setField(key, [...plan[key], { omschrijving: '', vanaf: '' }] as any);
+  function addRow(key: StrokeKey) {
+    setStroke(key, [...plan[key], { omschrijving: '', vanaf: '' }]);
   }
-  function removeRow(key: 'vlinderslag'|'rugcrawl'|'schoolslag'|'borstcrawl', idx: number) {
+  function removeRow(key: StrokeKey, idx: number) {
     const arr = [...plan[key]];
     if (arr.length <= 1) { // keep at least one row
       arr[0] = { omschrijving: '', vanaf: '' };
     } else {
       arr.splice(idx, 1);
     }
-    setField(key, arr as any);
+    setStroke(key, arr);
   }
 
   return (
@@ -367,4 +395,3 @@ export function TechniquePlanEditor({ swimmerId }: { swimmerId: string }) {
     </div>
   );
 }
-

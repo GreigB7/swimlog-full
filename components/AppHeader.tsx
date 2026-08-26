@@ -1,19 +1,17 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import type { Route } from 'next';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseBrowserClient } from "@/lib/supabase";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = getSupabaseBrowserClient();
 
 type Role = 'coach' | 'swimmer' | '';
 
 export function AppHeader() {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [role, setRole] = useState<Role>('');
   const [username, setUsername] = useState<string>('');
@@ -61,7 +59,7 @@ export function AppHeader() {
 
   async function signOut() {
     await supabase.auth.signOut();
-    window.location.href = '/';
+    router.replace('/');
   }
 
   return (
@@ -156,4 +154,3 @@ export function AppHeader() {
     </header>
   );
 }
-

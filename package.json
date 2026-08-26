@@ -2,30 +2,34 @@
   "name": "swimlog-full",
   "version": "0.2.1",
   "private": true,
+  "packageManager": "pnpm@11.7.0",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "audit": "pnpm audit --prod"
   },
   "dependencies": {
-    "next": "14.2.5",
+    "@supabase/ssr": "0.12.5",
+    "@supabase/supabase-js": "2.112.4",
+    "clsx": "2.1.1",
+    "next": "16.3.2",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "@supabase/supabase-js": "2.45.4",
-    "@supabase/ssr": "0.4.0",
     "recharts": "2.12.7",
-    "zod": "3.23.8",
-    "clsx": "2.1.1"
+    "zod": "3.23.8"
   },
   "devDependencies": {
-    "typescript": "5.4.5",
-    "eslint": "8.57.0",
     "@types/node": "20.12.7",
     "@types/react": "18.2.66",
     "@types/react-dom": "18.2.22",
+    "autoprefixer": "10.4.19",
+    "eslint": "9.39.1",
+    "eslint-config-next": "16.3.2",
+    "postcss": "8.5.26",
     "tailwindcss": "3.4.4",
-    "postcss": "8.4.38",
-    "autoprefixer": "10.4.19"
+    "typescript": "5.4.5"
   }
 }

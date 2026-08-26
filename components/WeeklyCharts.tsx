@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseBrowserClient } from '@/lib/supabase';
 import {
   ResponsiveContainer,
   PieChart, Pie, Cell, Tooltip, Legend,
@@ -9,10 +9,7 @@ import {
   LineChart, Line,
 } from 'recharts';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = getSupabaseBrowserClient();
 
 type Props = { userId: string; date: string };
 
@@ -162,7 +159,7 @@ export function WeeklyCharts({ userId, date }: Props) {
                       <Cell key={entry.key} fill={COLORS[entry.key]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(v: any) => [`${v} min`, 'Minuten']} />
+                  <Tooltip formatter={(v) => [`${v} min`, 'Minuten']} />
                   <Legend
                     payload={[
                       { value: 'Zwemmen',      type: 'square', color: COLORS.swim,  id: 'legend-swim' },
@@ -207,7 +204,7 @@ export function WeeklyCharts({ userId, date }: Props) {
             <BarChart data={byDay}>
               <XAxis dataKey="day" />
               <YAxis />
-              <Tooltip formatter={(v: any) => [`${v} min`, 'Minuten']} />
+              <Tooltip formatter={(v) => [`${v} min`, 'Minuten']} />
               <Legend />
               <Bar dataKey="green" name="Groen" fill="#22c55e" stackId="effort" />
               <Bar dataKey="white" name="Wit"   fill="#e5e7eb" stroke="#9ca3af" stackId="effort" />

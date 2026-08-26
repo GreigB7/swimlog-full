@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseBrowserClient } from '@/lib/supabase';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -14,10 +14,7 @@ import {
   LineChart,
 } from 'recharts';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = getSupabaseBrowserClient();
 
 type Props = { userId: string };
 
@@ -43,7 +40,7 @@ function normEffort(e: string | null | undefined): 'green' | 'white' | 'red' {
 export function AllTimeTrends({ userId }: Props) {
   const [rhr, setRhr] = useState<RhrRow[]>([]);
   const [train, setTrain] = useState<TrainRow[]>([]);
-  const [body, setBody] = useState<BodyRow[]>([] as any);
+  const [body, setBody] = useState<BodyRow[]>([]);
 
   useEffect(() => {
     if (!userId) return;
@@ -143,9 +140,10 @@ export function AllTimeTrends({ userId }: Props) {
                 {/* Right: bpm */}
                 <YAxis yAxisId="right" orientation="right" />
                 <Tooltip
-                  formatter={(value: any, name: any) => {
-                    if (name.includes('uur')) return [`${Number(value).toFixed(2)} uur`, ''];
-                    if (name.includes('RHR')) return [`${value} bpm`, ''];
+                  formatter={(value, name) => {
+                    const seriesName = String(name);
+                    if (seriesName.includes('uur')) return [`${Number(value).toFixed(2)} uur`, ''];
+                    if (seriesName.includes('RHR')) return [`${value} bpm`, ''];
                     return [value, ''];
                   }}
                   labelFormatter={(lbl) => `Datum: ${lbl}`}

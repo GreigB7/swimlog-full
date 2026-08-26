@@ -1,22 +1,31 @@
 'use client'
 import { useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { useRouter } from 'next/navigation';
 import { TechniquePlanViewer } from '@/components/TechniquePlanViewer';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { getCurrentProfile, profileHasRole } from '@/lib/supabase';
 
 export default function SwimmerPlanPage() {
+  const router = useRouter();
   const [userId, setUserId] = useState<string>('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.id) setUserId(session.user.id);
+      const { session, profile } = await getCurrentProfile();
+      if (!session?.user?.id) {
+        router.replace('/');
+        return;
+      }
+      if (profileHasRole(profile, 'coach')) {
+        router.replace('/dashboard/coach/plan');
+        return;
+      }
+      setUserId(session.user.id);
+      setLoading(false);
     })();
-  }, []);
+  }, [router]);
+
+  if (loading) return <div className="card">Laden...</div>;
 
   return (
     <div className="vstack gap-6">

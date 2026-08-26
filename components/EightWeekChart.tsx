@@ -1,12 +1,9 @@
 'use client'
 import { useEffect, useMemo, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = getSupabaseBrowserClient();
 
 type Row = {
   training_date: string;
@@ -113,7 +110,7 @@ export function EightWeekChart({ userId }: { userId: string }) {
               <BarChart data={byEffort}>
                 <XAxis dataKey="week" />
                 <YAxis />
-                <Tooltip formatter={(v: any) => [`${v} min`, 'Minuten']} />
+                <Tooltip formatter={(v) => [`${v} min`, 'Minuten']} />
                 <Legend
                   payload={[
                     { value: 'Groen (inspanning)', type: 'square', color: '#22c55e', id: 'green' },
@@ -137,7 +134,7 @@ export function EightWeekChart({ userId }: { userId: string }) {
               <BarChart data={byType}>
                 <XAxis dataKey="week" />
                 <YAxis />
-                <Tooltip formatter={(v: any) => [`${v} min`, 'Minuten']} />
+                <Tooltip formatter={(v) => [`${v} min`, 'Minuten']} />
                 <Legend />
                 <Bar dataKey="swim"  name="Zwemmen (min)" fill="#3b82f6" />
                 <Bar dataKey="land"  name="Land (min)"    fill="#f59e0b" />
@@ -150,5 +147,3 @@ export function EightWeekChart({ userId }: { userId: string }) {
     </div>
   );
 }
-
-

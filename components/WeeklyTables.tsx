@@ -1,11 +1,8 @@
 'use client'
-import { useEffect, useMemo, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = getSupabaseBrowserClient();
 
 type TrainRow = {
   id: string;
@@ -21,6 +18,11 @@ type RhrRow = { id: string; entry_date: string; resting_heart_rate: number | nul
 type BodyRow = { id: string; entry_date: string; height_cm: number | null; weight_kg: number | null; };
 
 type EditTarget = { kind: 'train' | 'rhr' | 'body', id: string } | null;
+type EditValues = Partial<
+  Pick<TrainRow, 'session_type' | 'duration_minutes' | 'heart_rate' | 'effort_color' | 'complexity' | 'details'> &
+  Pick<RhrRow, 'resting_heart_rate'> &
+  Pick<BodyRow, 'height_cm' | 'weight_kg'>
+>;
 
 // DB values English; UI labels Dutch
 type SessionType = 'Morning Swim' | 'Afternoon Swim' | 'Land Training' | 'Other Activity';
@@ -73,11 +75,11 @@ export function WeeklyTables({ userId, canEdit, date }: { userId: string, canEdi
   const [rhr, setRhr] = useState<RhrRow[]>([]);
   const [body, setBody] = useState<BodyRow[]>([]);
   const [edit, setEdit] = useState<EditTarget>(null);
-  const [vals, setVals] = useState<any>({});
+  const [vals, setVals] = useState<EditValues>({});
 
   const { start, end } = useMemo(() => weekBounds(date), [date]);
 
-  async function loadAll() {
+  const loadAll = useCallback(async () => {
     if (!userId) return;
     const t = await supabase.from('training_log')
       .select('id, training_date, session_type, duration_minutes, heart_rate, effort_color, complexity, details')
@@ -96,15 +98,15 @@ export function WeeklyTables({ userId, canEdit, date }: { userId: string, canEdi
       .eq('user_id', userId).gte('entry_date', start).lte('entry_date', end)
       .order('entry_date', { ascending: true });
     setBody(b.data ?? []);
-  }
+  }, [end, start, userId]);
 
-  useEffect(() => { loadAll(); /* eslint-disable-next-line */ }, [userId, start, end]);
+  useEffect(() => { void loadAll(); }, [loadAll]);
 
   async function save() {
     if (!edit) return;
     const table = edit.kind === 'train' ? 'training_log' : edit.kind === 'rhr' ? 'resting_hr_log' : 'body_metrics_log';
     const payload = { ...vals };
-    const { error } = await supabase.from(table).update(payload).eq('id', edit.id);
+    const { error } = await supabase.from(table).update(payload).eq('id', edit.id).eq('user_id', userId);
     if (!error) { setEdit(null); setVals({}); await loadAll(); }
   }
 
@@ -548,4 +550,3 @@ export function WeeklyTables({ userId, canEdit, date }: { userId: string, canEdi
     </div>
   );
 }
-

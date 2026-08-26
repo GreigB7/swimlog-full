@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useMemo } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
+import { getCurrentProfile, profileHasRole } from "@/lib/supabase";
 import { TrainingForm } from "@/components/TrainingForm";
 import { RhrForm } from "@/components/RhrForm";
 import { BodyForm } from "@/components/BodyForm";
@@ -11,11 +12,6 @@ import { WeeklyCharts } from "@/components/WeeklyCharts";
 import { AllTimeTrends } from "@/components/AllTimeTrends";
 import { WeeklyTotals } from "@/components/WeeklyTotals";
 import { ExportCsv } from "@/components/ExportCsv";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 type ViewMode = 'week' | '8weeks';
 
@@ -31,28 +27,33 @@ function getWeekBounds(dateISO: string) {
 }
 
 export default function SwimmerPage() {
+  const router = useRouter();
   const [userId, setUserId] = useState<string>('');
   const [mode, setMode] = useState<ViewMode>('week');
   const [date, setDate] = useState<string>(() => new Date().toISOString().slice(0,10));
   const [username, setUsername] = useState<string>('');
   const [email, setEmail] = useState<string>('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUserId(session.user.id);
-        setEmail(session.user.email || '');
-        const { data } = await supabase
-          .from('profiles')
-          .select('username,email')
-          .eq('id', session.user.id)
-          .maybeSingle();
-        if (data?.username) setUsername(String(data.username));
-        if (data?.email) setEmail(String(data.email));
+      const { session, profile } = await getCurrentProfile();
+      if (!session?.user) {
+        router.replace('/');
+        return;
       }
+
+      if (profileHasRole(profile, 'coach')) {
+        router.replace('/dashboard/coach');
+        return;
+      }
+
+      setUserId(session.user.id);
+      setEmail(profile?.email || session.user.email || '');
+      setUsername(profile?.username || '');
+      setLoading(false);
     })();
-  }, []);
+  }, [router]);
 
   const { weekStart, weekEnd } = useMemo(() => {
     if (mode === 'week') return getWeekBounds(date);
@@ -63,6 +64,8 @@ export default function SwimmerPage() {
     const fmt = (x: Date) => x.toISOString().slice(0, 10);
     return { weekStart: fmt(start), weekEnd: fmt(end) };
   }, [mode, date]);
+
+  if (loading) return <div className="card">Laden...</div>;
 
   return (
     <div className="vstack gap-6 pb-24">
@@ -108,5 +111,3 @@ export default function SwimmerPage() {
     </div>
   );
 }
-
-

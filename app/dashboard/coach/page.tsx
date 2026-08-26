@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useMemo, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
+import { getCurrentProfile, getSupabaseBrowserClient, profileHasRole } from "@/lib/supabase";
 import { WeekControls } from "@/components/WeekControls";
 import { WeeklyTables } from "@/components/WeeklyTables";
 import { EightWeekChart } from "@/components/EightWeekChart";
@@ -9,10 +10,7 @@ import { AllTimeTrends } from "@/components/AllTimeTrends";
 import { WeeklyTotals } from "@/components/WeeklyTotals";
 import { ExportCsv } from "@/components/ExportCsv";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = getSupabaseBrowserClient();
 
 type Profile = { id: string; email: string | null; username: string | null; role: string | null; };
 
@@ -28,19 +26,47 @@ function getWeekBounds(dateISO: string) {
 }
 
 export default function CoachPage() {
+  const router = useRouter();
   const [swimmers, setSwimmers] = useState<Profile[]>([]);
   const [userId, setUserId] = useState<string>('');
   const [mode, setMode] = useState<'week'|'8weeks'>('week');
   const [date, setDate] = useState<string>(() => new Date().toISOString().slice(0,10));
+  const [loading, setLoading] = useState(true);
+  const [accessDenied, setAccessDenied] = useState(false);
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from('profiles').select('id,email,username,role');
-      const list = (data ?? []).filter((p:any)=>p.role==='swimmer') as Profile[];
+      setLoading(true);
+      setAccessDenied(false);
+
+      const { session, profile } = await getCurrentProfile();
+      if (!session) {
+        router.replace('/');
+        return;
+      }
+
+      if (!profileHasRole(profile, 'coach')) {
+        setAccessDenied(true);
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id,email,username,role')
+        .eq('role', 'swimmer');
+      if (error) {
+        setSwimmers([]);
+        setLoading(false);
+        return;
+      }
+
+      const list = (data ?? []) as Profile[];
       setSwimmers(list);
       if (list[0]) setUserId(list[0].id);
+      setLoading(false);
     })();
-  }, []);
+  }, [router]);
 
   // Build the range ExportCsv expects
   const { weekStart, weekEnd } = useMemo(() => {
@@ -52,6 +78,17 @@ export default function CoachPage() {
     const fmt = (x: Date) => x.toISOString().slice(0, 10);
     return { weekStart: fmt(start), weekEnd: fmt(end) };
   }, [mode, date]);
+
+  if (loading) return <div className="card">Laden...</div>;
+
+  if (accessDenied) {
+    return (
+      <div className="card">
+        <h1 className="text-xl font-semibold">Dashboard coach</h1>
+        <p className="text-sm text-slate-600">Alleen toegankelijk voor coaches.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="vstack gap-6">
