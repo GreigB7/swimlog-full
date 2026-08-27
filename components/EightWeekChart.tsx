@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useMemo, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { StackedBarChart } from "@/components/NativeCharts";
 
 const supabase = getSupabaseBrowserClient();
 
@@ -105,43 +105,33 @@ export function EightWeekChart({ userId }: { userId: string }) {
         !byEffort.length ? (
           <div className="text-sm text-slate-600">Nog geen gegevens.</div>
         ) : (
-          <div className="min-w-0">
-            <ResponsiveContainer width="100%" height={280} minWidth={0}>
-              <BarChart data={byEffort}>
-                <XAxis dataKey="week" />
-                <YAxis />
-                <Tooltip formatter={(v) => [`${v} min`, 'Minuten']} />
-                <Legend
-                  payload={[
-                    { value: 'Groen (inspanning)', type: 'square', color: '#22c55e', id: 'green' },
-                    { value: 'Wit (inspanning)',   type: 'square', color: '#e5e7eb', id: 'white' },
-                    { value: 'Rood (inspanning)',  type: 'square', color: '#ef4444', id: 'red'   },
-                  ]}
-                />
-                <Bar dataKey="green" stackId="effort" fill="#22c55e" name="Groen (inspanning)" isAnimationActive={false} />
-                <Bar dataKey="white" stackId="effort" fill="#e5e7eb" stroke="#9ca3af" name="Wit (inspanning)" isAnimationActive={false} />
-                <Bar dataKey="red"   stackId="effort" fill="#ef4444" name="Rood (inspanning)" isAnimationActive={false} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <StackedBarChart
+            data={byEffort}
+            xKey="week"
+            height={280}
+            unit="min"
+            series={[
+              { key: 'green', label: 'Groen (inspanning)', color: '#22c55e' },
+              { key: 'white', label: 'Wit (inspanning)', color: '#e5e7eb', stroke: '#9ca3af' },
+              { key: 'red', label: 'Rood (inspanning)', color: '#ef4444' },
+            ]}
+          />
         )
       ) : (
         !byType.length ? (
           <div className="text-sm text-slate-600">Nog geen gegevens.</div>
         ) : (
-          <div className="min-w-0">
-            <ResponsiveContainer width="100%" height={280} minWidth={0}>
-              <BarChart data={byType}>
-                <XAxis dataKey="week" />
-                <YAxis />
-                <Tooltip formatter={(v) => [`${v} min`, 'Minuten']} />
-                <Legend />
-                <Bar dataKey="swim"  name="Zwemmen (min)" fill="#3b82f6" isAnimationActive={false} />
-                <Bar dataKey="land"  name="Land (min)"    fill="#f59e0b" isAnimationActive={false} />
-                <Bar dataKey="other" name="Overig (min)"  fill="#94a3b8" isAnimationActive={false} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <StackedBarChart
+            data={byType}
+            xKey="week"
+            height={280}
+            unit="min"
+            series={[
+              { key: 'swim', label: 'Zwemmen (min)', color: '#3b82f6' },
+              { key: 'land', label: 'Land (min)', color: '#f59e0b' },
+              { key: 'other', label: 'Overig (min)', color: '#94a3b8' },
+            ]}
+          />
         )
       )}
     </div>

@@ -2,17 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
-import {
-  ResponsiveContainer,
-  ComposedChart,
-  Bar,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-  LineChart,
-} from 'recharts';
+import { LineChartSvg, TrainingRhrChartSvg } from '@/components/NativeCharts';
 
 const supabase = getSupabaseBrowserClient();
 
@@ -131,46 +121,17 @@ export function AllTimeTrends({ userId }: Props) {
           Rusthartslag — historie (met trainingsuren per dag en inspanning)
         </h3>
         {dailyCombined.length ? (
-          <div className="min-w-0">
-            <ResponsiveContainer width="100%" height={320} minWidth={0}>
-              <ComposedChart data={dailyCombined}>
-                <XAxis dataKey="date" />
-                {/* Left: training hours */}
-                <YAxis yAxisId="left" />
-                {/* Right: bpm */}
-                <YAxis yAxisId="right" orientation="right" />
-                <Tooltip
-                  formatter={(value, name) => {
-                    const seriesName = String(name);
-                    if (seriesName.includes('uur')) return [`${Number(value).toFixed(2)} uur`, ''];
-                    if (seriesName.includes('RHR')) return [`${value} bpm`, ''];
-                    return [value, ''];
-                  }}
-                  labelFormatter={(lbl) => `Datum: ${lbl}`}
-                />
-                <Legend
-                  payload={[
-                    { value: 'Groen (uur)', type: 'square', color: COLORS.green, id: 'lg-green' },
-                    { value: 'Wit (uur)', type: 'square', color: COLORS.white, id: 'lg-white' },
-                    { value: 'Rood (uur)', type: 'square', color: COLORS.red, id: 'lg-red' },
-                    { value: 'RHR (bpm)', type: 'line', color: COLORS.rhr, id: 'lg-rhr' },
-                  ]}
-                />
-                <Bar yAxisId="left" dataKey="green_h" name="Groen (uur)" stackId="h" fill={COLORS.green} isAnimationActive={false} />
-                <Bar
-                  yAxisId="left"
-                  dataKey="white_h"
-                  name="Wit (uur)"
-                  stackId="h"
-                  fill={COLORS.white}
-                  stroke={COLORS.whiteStroke}
-                  isAnimationActive={false}
-                />
-                <Bar yAxisId="left" dataKey="red_h" name="Rood (uur)" stackId="h" fill={COLORS.red} isAnimationActive={false} />
-                <Line yAxisId="right" type="monotone" dataKey="rhr" name="RHR (bpm)" dot stroke={COLORS.rhr} isAnimationActive={false} />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
+          <TrainingRhrChartSvg
+            data={dailyCombined}
+            xKey="date"
+            rhrKey="rhr"
+            height={320}
+            barSeries={[
+              { key: 'green_h', label: 'Groen (uur)', color: COLORS.green },
+              { key: 'white_h', label: 'Wit (uur)', color: COLORS.white, stroke: COLORS.whiteStroke },
+              { key: 'red_h', label: 'Rood (uur)', color: COLORS.red },
+            ]}
+          />
         ) : (
           <div className="text-sm text-slate-600">Nog geen gegevens.</div>
         )}
@@ -180,16 +141,15 @@ export function AllTimeTrends({ userId }: Props) {
       <div className="card">
         <h3 className="font-semibold mb-2">Lengte — historie</h3>
         {heightSeries.length ? (
-          <div className="min-w-0">
-            <ResponsiveContainer width="100%" height={260} minWidth={0}>
-              <LineChart data={heightSeries}>
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="height" name="Lengte (cm)" dot isAnimationActive={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          <LineChartSvg
+            data={heightSeries}
+            xKey="date"
+            yKey="height"
+            label="Lengte (cm)"
+            color="#64748b"
+            height={260}
+            unit="cm"
+          />
         ) : (
           <div className="text-sm text-slate-600">Nog geen lengtemetingen.</div>
         )}
@@ -199,16 +159,15 @@ export function AllTimeTrends({ userId }: Props) {
       <div className="card">
         <h3 className="font-semibold mb-2">Gewicht — historie</h3>
         {weightSeries.length ? (
-          <div className="min-w-0">
-            <ResponsiveContainer width="100%" height={260} minWidth={0}>
-              <LineChart data={weightSeries}>
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="weight" name="Gewicht (kg)" dot isAnimationActive={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          <LineChartSvg
+            data={weightSeries}
+            xKey="date"
+            yKey="weight"
+            label="Gewicht (kg)"
+            color="#14b8a6"
+            height={260}
+            unit="kg"
+          />
         ) : (
           <div className="text-sm text-slate-600">Nog geen gewichtmetingen.</div>
         )}
