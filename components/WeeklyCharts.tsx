@@ -2,12 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
-import {
-  ResponsiveContainer,
-  PieChart, Pie, Cell, Tooltip, Legend,
-  BarChart, Bar, XAxis, YAxis,
-  LineChart, Line,
-} from 'recharts';
+import { DonutChart, LineChartSvg, StackedBarChart } from '@/components/NativeCharts';
 
 const supabase = getSupabaseBrowserClient();
 
@@ -108,9 +103,9 @@ export function WeeklyCharts({ userId, date }: Props) {
 
   // PIE data (uses colours above)
   const pieData = useMemo(() => ([
-    { key: 'swim' as const, name: 'Zwemmen',      value: totals.swim },
-    { key: 'land' as const, name: 'Landtraining', value: totals.land },
-    { key: 'other' as const, name: 'Overig',      value: totals.other },
+    { key: 'swim', label: 'Zwemmen',      value: totals.swim, color: COLORS.swim },
+    { key: 'land', label: 'Landtraining', value: totals.land, color: COLORS.land },
+    { key: 'other', label: 'Overig',      value: totals.other, color: COLORS.other },
   ]), [totals]);
 
   // Stacked minutes per day by effort (green/white/red) — Monday→Sunday
@@ -151,25 +146,7 @@ export function WeeklyCharts({ userId, date }: Props) {
         <h3 className="font-semibold mb-2">Verdeling trainingstypes (week)</h3>
         {hasPieValues ? (
           <>
-            <div className="min-w-0">
-              <ResponsiveContainer width="100%" height={260} minWidth={0}>
-                <PieChart>
-                  <Pie dataKey="value" nameKey="name" data={pieData} outerRadius={100} isAnimationActive={false}>
-                    {pieData.map((entry) => (
-                      <Cell key={entry.key} fill={COLORS[entry.key]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(v) => [`${v} min`, 'Minuten']} />
-                  <Legend
-                    payload={[
-                      { value: 'Zwemmen',      type: 'square', color: COLORS.swim,  id: 'legend-swim' },
-                      { value: 'Landtraining', type: 'square', color: COLORS.land,  id: 'legend-land' },
-                      { value: 'Overig',       type: 'square', color: COLORS.other, id: 'legend-other' },
-                    ]}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+            <DonutChart data={pieData} height={260} totalLabel="Totaal" unit="min" />
 
             {/* Totals cards */}
             <div className="grid grid-cols-2 gap-2 mt-3">
@@ -199,35 +176,32 @@ export function WeeklyCharts({ userId, date }: Props) {
       {/* BAR: Training per dag (minuten) — op inspanning */}
       <div className="card lg:col-span-2">
         <h3 className="font-semibold mb-2">Training per dag (minuten) — op inspanning</h3>
-        <div className="min-w-0">
-          <ResponsiveContainer width="100%" height={260} minWidth={0}>
-            <BarChart data={byDay}>
-              <XAxis dataKey="day" />
-              <YAxis />
-              <Tooltip formatter={(v) => [`${v} min`, 'Minuten']} />
-              <Legend />
-              <Bar dataKey="green" name="Groen" fill="#22c55e" stackId="effort" isAnimationActive={false} />
-              <Bar dataKey="white" name="Wit"   fill="#e5e7eb" stroke="#9ca3af" stackId="effort" isAnimationActive={false} />
-              <Bar dataKey="red"   name="Rood"  fill="#ef4444" stackId="effort" isAnimationActive={false} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <StackedBarChart
+          data={byDay}
+          xKey="day"
+          height={260}
+          unit="min"
+          series={[
+            { key: 'green', label: 'Groen', color: '#22c55e' },
+            { key: 'white', label: 'Wit', color: '#e5e7eb', stroke: '#9ca3af' },
+            { key: 'red', label: 'Rood', color: '#ef4444' },
+          ]}
+        />
       </div>
 
       {/* LINE: Rusthartslag (week) */}
       <div className="card lg:col-span-3">
         <h3 className="font-semibold mb-2">Rusthartslag (week)</h3>
         {rhrData.length ? (
-          <div className="min-w-0">
-            <ResponsiveContainer width="100%" height={220} minWidth={0}>
-              <LineChart data={rhrData}>
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="rhr" dot stroke="#0ea5e9" isAnimationActive={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          <LineChartSvg
+            data={rhrData}
+            xKey="date"
+            yKey="rhr"
+            label="Rusthartslag"
+            color="#0ea5e9"
+            height={220}
+            unit="bpm"
+          />
         ) : (
           <div className="text-sm text-slate-600">Nog geen RHR-gegevens voor deze week.</div>
         )}
