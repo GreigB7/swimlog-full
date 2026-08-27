@@ -131,8 +131,8 @@ export function AllTimeTrends({ userId }: Props) {
           Rusthartslag — historie (met trainingsuren per dag en inspanning)
         </h3>
         {dailyCombined.length ? (
-          <div style={{ width: '100%', height: 320 }}>
-            <ResponsiveContainer>
+          <div className="min-w-0">
+            <ResponsiveContainer width="100%" height={320} minWidth={0}>
               <ComposedChart data={dailyCombined}>
                 <XAxis dataKey="date" />
                 {/* Left: training hours */}
@@ -156,7 +156,7 @@ export function AllTimeTrends({ userId }: Props) {
                     { value: 'RHR (bpm)', type: 'line', color: COLORS.rhr, id: 'lg-rhr' },
                   ]}
                 />
-                <Bar yAxisId="left" dataKey="green_h" name="Groen (uur)" stackId="h" fill={COLORS.green} />
+                <Bar yAxisId="left" dataKey="green_h" name="Groen (uur)" stackId="h" fill={COLORS.green} isAnimationActive={false} />
                 <Bar
                   yAxisId="left"
                   dataKey="white_h"
@@ -164,9 +164,10 @@ export function AllTimeTrends({ userId }: Props) {
                   stackId="h"
                   fill={COLORS.white}
                   stroke={COLORS.whiteStroke}
+                  isAnimationActive={false}
                 />
-                <Bar yAxisId="left" dataKey="red_h" name="Rood (uur)" stackId="h" fill={COLORS.red} />
-                <Line yAxisId="right" type="monotone" dataKey="rhr" name="RHR (bpm)" dot stroke={COLORS.rhr} />
+                <Bar yAxisId="left" dataKey="red_h" name="Rood (uur)" stackId="h" fill={COLORS.red} isAnimationActive={false} />
+                <Line yAxisId="right" type="monotone" dataKey="rhr" name="RHR (bpm)" dot stroke={COLORS.rhr} isAnimationActive={false} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
@@ -179,13 +180,13 @@ export function AllTimeTrends({ userId }: Props) {
       <div className="card">
         <h3 className="font-semibold mb-2">Lengte — historie</h3>
         {heightSeries.length ? (
-          <div style={{ width: '100%', height: 260 }}>
-            <ResponsiveContainer>
+          <div className="min-w-0">
+            <ResponsiveContainer width="100%" height={260} minWidth={0}>
               <LineChart data={heightSeries}>
                 <XAxis dataKey="date" />
                 <YAxis />
                 <Tooltip />
-                <Line type="monotone" dataKey="height" name="Lengte (cm)" dot />
+                <Line type="monotone" dataKey="height" name="Lengte (cm)" dot isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -198,13 +199,13 @@ export function AllTimeTrends({ userId }: Props) {
       <div className="card">
         <h3 className="font-semibold mb-2">Gewicht — historie</h3>
         {weightSeries.length ? (
-          <div style={{ width: '100%', height: 260 }}>
-            <ResponsiveContainer>
+          <div className="min-w-0">
+            <ResponsiveContainer width="100%" height={260} minWidth={0}>
               <LineChart data={weightSeries}>
                 <XAxis dataKey="date" />
                 <YAxis />
                 <Tooltip />
-                <Line type="monotone" dataKey="weight" name="Gewicht (kg)" dot />
+                <Line type="monotone" dataKey="weight" name="Gewicht (kg)" dot isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
