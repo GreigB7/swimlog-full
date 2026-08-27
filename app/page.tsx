@@ -4,11 +4,33 @@ import Link from 'next/link'
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 
 const supabase = getSupabaseBrowserClient();
+const resendCooldownSeconds = 60;
+
+type AuthMessageError = {
+  message: string;
+  status?: number;
+  code?: string;
+};
+
+function getAuthMessage(error: AuthMessageError) {
+  const message = error.message.toLowerCase();
+
+  if (error.status === 429 || message.includes('rate limit')) {
+    return 'Er zijn te veel inloglinks aangevraagd. Wacht even en probeer het daarna opnieuw.';
+  }
+
+  if (error.message === 'User not found') {
+    return 'Dit e-mailadres is niet goedgekeurd voor toegang.';
+  }
+
+  return error.message;
+}
 
 export default function Page() {
   const [email, setEmail] = useState('')
   const [msg, setMsg] = useState<string>('')
   const [loading, setLoading] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
 
   const [loggedInEmail, setLoggedInEmail] = useState<string>('')
   const [role, setRole] = useState<string>('') // 'swimmer' | 'coach' (optioneel)
@@ -16,6 +38,12 @@ export default function Page() {
   // Check huidige sessie
   useEffect(() => {
     ;(async () => {
+      const authError = new URLSearchParams(window.location.search).get('auth_error')
+      if (authError) {
+        setMsg(authError)
+        window.history.replaceState(null, '', window.location.pathname)
+      }
+
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
         setLoggedInEmail(session.user.email || '')
@@ -33,6 +61,16 @@ export default function Page() {
     })()
   }, [])
 
+  useEffect(() => {
+    if (cooldown <= 0) return
+
+    const timer = window.setInterval(() => {
+      setCooldown(value => Math.max(0, value - 1))
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [cooldown])
+
   async function sendMagicLink(e: React.FormEvent) {
     e.preventDefault()
     setMsg('')
@@ -46,11 +84,13 @@ export default function Page() {
         },
       })
       if (error) {
-        setMsg(error.message === 'User not found'
-          ? 'Dit e-mailadres is niet goedgekeurd voor toegang.'
-          : error.message)
+        setMsg(getAuthMessage(error))
+        if (error.status === 429 || error.message.toLowerCase().includes('rate limit')) {
+          setCooldown(resendCooldownSeconds)
+        }
       } else {
         setMsg('Controleer je e-mail voor de inloglink.')
+        setCooldown(resendCooldownSeconds)
       }
     } finally {
       setLoading(false)
@@ -96,8 +136,12 @@ export default function Page() {
             onChange={e => setEmail(e.target.value)}
             placeholder="jij@voorbeeld.nl"
           />
-          <button className="btn" type="submit" disabled={loading}>
-            {loading ? 'Versturen…' : 'Stuur inloglink'}
+          <button className="btn" type="submit" disabled={loading || cooldown > 0}>
+            {loading
+              ? 'Versturen…'
+              : cooldown > 0
+                ? `Probeer opnieuw over ${cooldown}s`
+                : 'Stuur inloglink'}
           </button>
           <div className="text-xs text-slate-500">
             Alleen vooraf toegevoegde gebruikers kunnen inloggen.
