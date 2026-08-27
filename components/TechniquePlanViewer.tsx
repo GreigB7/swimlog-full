@@ -1,13 +1,64 @@
 'use client'
 import { useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseBrowserClient } from '@/lib/supabase';
 import type { PlanData } from './TechniquePlanEditor';
-import { PrintButton } from '@/components/PrintButton';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = getSupabaseBrowserClient();
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function textValue(value: unknown) {
+  return value == null ? '' : String(value);
+}
+
+function normExercise(value: unknown): PlanData['oef1'] {
+  if (!isRecord(value)) return { omschrijving: '', doel: '', vanaf: '' };
+  return {
+    omschrijving: textValue(value.omschrijving),
+    doel: textValue(value.doel),
+    vanaf: textValue(value.vanaf),
+  };
+}
+
+function normStartVanaf(value: unknown): PlanData['vlinderslag'][number] {
+  if (!isRecord(value)) return { omschrijving: '', vanaf: '' };
+  return {
+    omschrijving: textValue(value.omschrijving),
+    vanaf: textValue(value.vanaf),
+  };
+}
+
+function normStartVanafList(value: unknown) {
+  if (Array.isArray(value)) return value.map(normStartVanaf);
+  return value ? [normStartVanaf(value)] : [];
+}
+
+function normRaceverdeling(value: unknown): PlanData['raceverdeling'] {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => {
+    if (!isRecord(item)) return { omschrijving: '', geconstateerd_bij: '' };
+    return {
+      omschrijving: textValue(item.omschrijving),
+      geconstateerd_bij: textValue(item.geconstateerd_bij),
+    };
+  });
+}
+
+function normPlan(value: unknown): PlanData | null {
+  if (!isRecord(value)) return null;
+  return {
+    oef1: normExercise(value.oef1),
+    oef2: normExercise(value.oef2),
+    vlinderslag: normStartVanafList(value.vlinderslag),
+    rugcrawl: normStartVanafList(value.rugcrawl),
+    schoolslag: normStartVanafList(value.schoolslag),
+    borstcrawl: normStartVanafList(value.borstcrawl),
+    starten_keren: normStartVanaf(value.starten_keren),
+    raceverdeling: normRaceverdeling(value.raceverdeling),
+  };
+}
 
 export function TechniquePlanViewer({ userId }: { userId: string }) {
   const [plan, setPlan] = useState<PlanData | null>(null);
@@ -24,31 +75,9 @@ export function TechniquePlanViewer({ userId }: { userId: string }) {
         .maybeSingle();
       if (error) { setMsg(error.message); return; }
       if (!data?.data) { setPlan(null); return; }
-
-      // quick normalize for viewing
-      const d = data.data as any;
-      const toArr = (x:any) => Array.isArray(x) ? x : x ? [x] : [];
-      setPlan({
-        oef1: d.oef1,
-        oef2: d.oef2,
-        vlinderslag: toArr(d.vlinderslag),
-        rugcrawl:    toArr(d.rugcrawl),
-        schoolslag:  toArr(d.schoolslag),
-        borstcrawl:  toArr(d.borstcrawl),
-        starten_keren: d.starten_keren,
-        raceverdeling: Array.isArray(d.raceverdeling) ? d.raceverdeling : [],
-      });
+      setPlan(normPlan(data.data));
     })();
   }, [userId]);
-
-  <div className="card print:hidden">
-  <div className="flex items-center justify-between">
-    <h1 className="text-xl font-semibold">Techniekplan</h1>
-    <PrintButton />
-  </div>
-  <p className="text-sm text-slate-600">Dit is jouw techniekplan zoals ingesteld door de coach.</p>
-</div>
-
 
   if (msg) return <div className="card">{msg}</div>;
   if (!plan) return <div className="card">Nog geen techniekplan beschikbaar.</div>;
@@ -137,4 +166,3 @@ function StrokeSection({ title, rows }: { title: string; rows: { omschrijving: s
     </div>
   );
 }
-

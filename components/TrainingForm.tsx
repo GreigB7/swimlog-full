@@ -1,11 +1,8 @@
 'use client'
 import { useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = getSupabaseBrowserClient();
 
 // DB values (English), UI labels (Dutch)
 type SessionType = 'Morning Swim' | 'Afternoon Swim' | 'Land Training' | 'Other Activity';
@@ -25,6 +22,11 @@ const EFFORT_OPTIONS: { value: Effort; label: string }[] = [
 ];
 
 const COMPLEXITIES = [1, 2, 3] as const;
+type Complexity = (typeof COMPLEXITIES)[number];
+
+function isComplexity(value: number): value is Complexity {
+  return COMPLEXITIES.includes(value as Complexity);
+}
 
 export function TrainingForm() {
   const [date, setDate] = useState<string>('');
@@ -32,7 +34,7 @@ export function TrainingForm() {
   const [dur, setDur] = useState<number | ''>('');
   const [hr, setHr] = useState<number | ''>('');
   const [effort, setEffort] = useState<Effort>('Green');
-  const [cx, setCx] = useState<(typeof COMPLEXITIES)[number] | ''>('');
+  const [cx, setCx] = useState<Complexity | ''>('');
   const [details, setDetails] = useState('');
   const [msg, setMsg] = useState<string>('');
 
@@ -132,8 +134,11 @@ export function TrainingForm() {
           <div className="label">Complexiteit</div>
           <select
             className="w-full min-w-0"
-            value={cx as any}
-            onChange={e => setCx(e.target.value ? (parseInt(e.target.value) as (typeof COMPLEXITIES)[number]) : '' as any)}
+            value={cx}
+            onChange={e => {
+              const nextValue = Number(e.target.value);
+              setCx(e.target.value && isComplexity(nextValue) ? nextValue : '');
+            }}
           >
             <option value=""></option>
             {COMPLEXITIES.map(v => <option key={v} value={v}>{v}</option>)}

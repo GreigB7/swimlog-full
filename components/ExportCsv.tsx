@@ -1,15 +1,15 @@
 'use client'
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseBrowserClient } from "@/lib/supabase";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = getSupabaseBrowserClient();
 
-function toCSV(rows: any[]) {
+type CsvValue = string | number | boolean | null | undefined;
+type CsvRow = Record<string, CsvValue>;
+
+function toCSV(rows: CsvRow[]) {
   if (!rows.length) return '';
   const headers = Object.keys(rows[0]);
-  const esc = (v: any) => {
+  const esc = (v: CsvValue) => {
     const s = v === null || v === undefined ? '' : String(v);
     if (s.includes('"') || s.includes(',') || s.includes('\n')) {
       return `"${s.replace(/"/g, '""')}"`;

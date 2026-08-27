@@ -1,13 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { TechniquePlanEditor } from '@/components/TechniquePlanEditor';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = getSupabaseBrowserClient();
 
 type Person = { id: string; username: string | null; email: string | null };
 
@@ -70,7 +67,6 @@ export default function CoachPlanPage() {
 
       setLoading(false);
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function onChangeSwimmer(id: string) {
@@ -137,4 +133,3 @@ export default function CoachPlanPage() {
     </div>
   );
 }
-

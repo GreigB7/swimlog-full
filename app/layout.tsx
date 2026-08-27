@@ -1,9 +1,8 @@
 // app/layout.tsx
 import './globals.css';
-import type { Metadata } from 'next';
 import { AppHeader } from '@/components/AppHeader';
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'Zwem Logboek',
   description: 'Logboek voor zwemmers en coaches',
 };
