@@ -151,10 +151,10 @@ export function WeeklyCharts({ userId, date }: Props) {
         <h3 className="font-semibold mb-2">Verdeling trainingstypes (week)</h3>
         {hasPieValues ? (
           <>
-            <div style={{ width: '100%', height: 260 }}>
-              <ResponsiveContainer>
+            <div className="min-w-0">
+              <ResponsiveContainer width="100%" height={260} minWidth={0}>
                 <PieChart>
-                  <Pie dataKey="value" nameKey="name" data={pieData} outerRadius={100}>
+                  <Pie dataKey="value" nameKey="name" data={pieData} outerRadius={100} isAnimationActive={false}>
                     {pieData.map((entry) => (
                       <Cell key={entry.key} fill={COLORS[entry.key]} />
                     ))}
@@ -199,16 +199,16 @@ export function WeeklyCharts({ userId, date }: Props) {
       {/* BAR: Training per dag (minuten) — op inspanning */}
       <div className="card lg:col-span-2">
         <h3 className="font-semibold mb-2">Training per dag (minuten) — op inspanning</h3>
-        <div style={{ width: '100%', height: 260 }}>
-          <ResponsiveContainer>
+        <div className="min-w-0">
+          <ResponsiveContainer width="100%" height={260} minWidth={0}>
             <BarChart data={byDay}>
               <XAxis dataKey="day" />
               <YAxis />
               <Tooltip formatter={(v) => [`${v} min`, 'Minuten']} />
               <Legend />
-              <Bar dataKey="green" name="Groen" fill="#22c55e" stackId="effort" />
-              <Bar dataKey="white" name="Wit"   fill="#e5e7eb" stroke="#9ca3af" stackId="effort" />
-              <Bar dataKey="red"   name="Rood"  fill="#ef4444" stackId="effort" />
+              <Bar dataKey="green" name="Groen" fill="#22c55e" stackId="effort" isAnimationActive={false} />
+              <Bar dataKey="white" name="Wit"   fill="#e5e7eb" stroke="#9ca3af" stackId="effort" isAnimationActive={false} />
+              <Bar dataKey="red"   name="Rood"  fill="#ef4444" stackId="effort" isAnimationActive={false} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -218,13 +218,13 @@ export function WeeklyCharts({ userId, date }: Props) {
       <div className="card lg:col-span-3">
         <h3 className="font-semibold mb-2">Rusthartslag (week)</h3>
         {rhrData.length ? (
-          <div style={{ width: '100%', height: 220 }}>
-            <ResponsiveContainer>
+          <div className="min-w-0">
+            <ResponsiveContainer width="100%" height={220} minWidth={0}>
               <LineChart data={rhrData}>
                 <XAxis dataKey="date" />
                 <YAxis />
                 <Tooltip />
-                <Line type="monotone" dataKey="rhr" dot stroke="#0ea5e9" />
+                <Line type="monotone" dataKey="rhr" dot stroke="#0ea5e9" isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>

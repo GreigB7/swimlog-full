@@ -105,8 +105,8 @@ export function EightWeekChart({ userId }: { userId: string }) {
         !byEffort.length ? (
           <div className="text-sm text-slate-600">Nog geen gegevens.</div>
         ) : (
-          <div style={{ width: "100%", height: 280 }}>
-            <ResponsiveContainer>
+          <div className="min-w-0">
+            <ResponsiveContainer width="100%" height={280} minWidth={0}>
               <BarChart data={byEffort}>
                 <XAxis dataKey="week" />
                 <YAxis />
@@ -118,9 +118,9 @@ export function EightWeekChart({ userId }: { userId: string }) {
                     { value: 'Rood (inspanning)',  type: 'square', color: '#ef4444', id: 'red'   },
                   ]}
                 />
-                <Bar dataKey="green" stackId="effort" fill="#22c55e" name="Groen (inspanning)" />
-                <Bar dataKey="white" stackId="effort" fill="#e5e7eb" stroke="#9ca3af" name="Wit (inspanning)" />
-                <Bar dataKey="red"   stackId="effort" fill="#ef4444" name="Rood (inspanning)" />
+                <Bar dataKey="green" stackId="effort" fill="#22c55e" name="Groen (inspanning)" isAnimationActive={false} />
+                <Bar dataKey="white" stackId="effort" fill="#e5e7eb" stroke="#9ca3af" name="Wit (inspanning)" isAnimationActive={false} />
+                <Bar dataKey="red"   stackId="effort" fill="#ef4444" name="Rood (inspanning)" isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -129,16 +129,16 @@ export function EightWeekChart({ userId }: { userId: string }) {
         !byType.length ? (
           <div className="text-sm text-slate-600">Nog geen gegevens.</div>
         ) : (
-          <div style={{ width: "100%", height: 280 }}>
-            <ResponsiveContainer>
+          <div className="min-w-0">
+            <ResponsiveContainer width="100%" height={280} minWidth={0}>
               <BarChart data={byType}>
                 <XAxis dataKey="week" />
                 <YAxis />
                 <Tooltip formatter={(v) => [`${v} min`, 'Minuten']} />
                 <Legend />
-                <Bar dataKey="swim"  name="Zwemmen (min)" fill="#3b82f6" />
-                <Bar dataKey="land"  name="Land (min)"    fill="#f59e0b" />
-                <Bar dataKey="other" name="Overig (min)"  fill="#94a3b8" />
+                <Bar dataKey="swim"  name="Zwemmen (min)" fill="#3b82f6" isAnimationActive={false} />
+                <Bar dataKey="land"  name="Land (min)"    fill="#f59e0b" isAnimationActive={false} />
+                <Bar dataKey="other" name="Overig (min)"  fill="#94a3b8" isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
           </div>
